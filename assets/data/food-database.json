@@ -1,0 +1,279 @@
+{
+  "foodItems": [
+    {
+      "name": "Apple",
+      "category": "produce",
+      "avgPrice": 1.50,
+      "daysUntilSpoilage": 7,
+      "perishability": 3,
+      "spriteKey": "apple",
+      "educationalFact": "Apples release ethylene gas that can make other produce spoil faster. Store separately!"
+    },
+    {
+      "name": "Banana",
+      "category": "produce",
+      "avgPrice": 0.60,
+      "daysUntilSpoilage": 5,
+      "perishability": 4,
+      "spriteKey": "banana",
+      "educationalFact": "Bananas ripen quickly. Freeze overripe ones for smoothies!"
+    },
+    {
+      "name": "Milk",
+      "category": "dairy",
+      "avgPrice": 3.99,
+      "daysUntilSpoilage": 7,
+      "perishability": 3,
+      "spriteKey": "milk",
+      "educationalFact": "Milk stays freshest on the middle shelf, not the door!"
+    },
+    {
+      "name": "Yogurt",
+      "category": "dairy",
+      "avgPrice": 4.50,
+      "daysUntilSpoilage": 14,
+      "perishability": 2,
+      "spriteKey": "yogurt",
+      "educationalFact": "Yogurt often stays good past the date on the package. Use your senses!"
+    },
+    {
+      "name": "Chicken Breast",
+      "category": "meat",
+      "avgPrice": 8.99,
+      "daysUntilSpoilage": 2,
+      "perishability": 5,
+      "spriteKey": "chicken",
+      "educationalFact": "Raw chicken must be cooked within 1-2 days or frozen immediately."
+    },
+    {
+      "name": "Ground Beef",
+      "category": "meat",
+      "avgPrice": 6.99,
+      "daysUntilSpoilage": 2,
+      "perishability": 5,
+      "spriteKey": "beef",
+      "educationalFact": "Ground meat spoils faster than whole cuts. Use quickly or freeze!"
+    },
+    {
+      "name": "Salmon",
+      "category": "fish",
+      "avgPrice": 12.99,
+      "daysUntilSpoilage": 1,
+      "perishability": 5,
+      "spriteKey": "salmon",
+      "educationalFact": "Fresh fish should smell like the ocean, not fishy. Cook within 1 day!"
+    },
+    {
+      "name": "Lettuce",
+      "category": "produce",
+      "avgPrice": 2.50,
+      "daysUntilSpoilage": 5,
+      "perishability": 4,
+      "spriteKey": "lettuce",
+      "educationalFact": "Keep lettuce in a crisper drawer with a damp paper towel."
+    },
+    {
+      "name": "Tomato",
+      "category": "produce",
+      "avgPrice": 1.99,
+      "daysUntilSpoilage": 6,
+      "perishability": 3,
+      "spriteKey": "tomato",
+      "educationalFact": "Store tomatoes at room temperature for best flavor until ripe."
+    },
+    {
+      "name": "Bread",
+      "category": "grains",
+      "avgPrice": 3.50,
+      "daysUntilSpoilage": 7,
+      "perishability": 2,
+      "spriteKey": "bread",
+      "educationalFact": "Freeze bread you won't use within a week - it stays fresh!"
+    },
+    {
+      "name": "Pasta",
+      "category": "grains",
+      "avgPrice": 2.00,
+      "daysUntilSpoilage": 365,
+      "perishability": 1,
+      "spriteKey": "pasta",
+      "educationalFact": "Dry pasta lasts over a year in the pantry. Great for meal planning!"
+    },
+    {
+      "name": "Rice",
+      "category": "grains",
+      "avgPrice": 4.00,
+      "daysUntilSpoilage": 365,
+      "perishability": 1,
+      "spriteKey": "rice",
+      "educationalFact": "Uncooked rice can last years if kept dry and pest-free."
+    },
+    {
+      "name": "Eggs",
+      "category": "dairy",
+      "avgPrice": 4.50,
+      "daysUntilSpoilage": 21,
+      "perishability": 2,
+      "spriteKey": "eggs",
+      "educationalFact": "Eggs can last 3-5 weeks past their carton date if refrigerated."
+    },
+    {
+      "name": "Cheese",
+      "category": "dairy",
+      "avgPrice": 5.99,
+      "daysUntilSpoilage": 14,
+      "perishability": 2,
+      "spriteKey": "cheese",
+      "educationalFact": "Hard cheeses last longer than soft. Wrap tightly to prevent drying."
+    },
+    {
+      "name": "Carrot",
+      "category": "produce",
+      "avgPrice": 2.00,
+      "daysUntilSpoilage": 14,
+      "perishability": 2,
+      "spriteKey": "carrot",
+      "educationalFact": "Carrots last longest when stored in water in the fridge."
+    },
+    {
+      "name": "Broccoli",
+      "category": "produce",
+      "avgPrice": 2.50,
+      "daysUntilSpoilage": 7,
+      "perishability": 3,
+      "spriteKey": "broccoli",
+      "educationalFact": "Keep broccoli in the crisper, loosely wrapped. Use stalks too!"
+    },
+    {
+      "name": "Potato",
+      "category": "produce",
+      "avgPrice": 1.50,
+      "daysUntilSpoilage": 30,
+      "perishability": 2,
+      "spriteKey": "potato",
+      "educationalFact": "Store potatoes in a cool, dark place - not the fridge!"
+    },
+    {
+      "name": "Onion",
+      "category": "produce",
+      "avgPrice": 1.25,
+      "daysUntilSpoilage": 30,
+      "perishability": 2,
+      "spriteKey": "onion",
+      "educationalFact": "Onions last longest in a cool, dry, well-ventilated area."
+    },
+    {
+      "name": "Canned Beans",
+      "category": "canned",
+      "avgPrice": 1.50,
+      "daysUntilSpoilage": 730,
+      "perishability": 1,
+      "spriteKey": "canned-beans",
+      "educationalFact": "Canned goods can last 2+ years. Great for emergency meals!"
+    },
+    {
+      "name": "Frozen Peas",
+      "category": "frozen",
+      "avgPrice": 2.50,
+      "daysUntilSpoilage": 180,
+      "perishability": 1,
+      "spriteKey": "frozen-peas",
+      "educationalFact": "Frozen vegetables are picked at peak ripeness and retain nutrients."
+    },
+    {
+      "name": "Strawberries",
+      "category": "produce",
+      "avgPrice": 4.50,
+      "daysUntilSpoilage": 3,
+      "perishability": 5,
+      "spriteKey": "strawberry",
+      "educationalFact": "Berries are very delicate. Don't wash until ready to eat!"
+    },
+    {
+      "name": "Spinach",
+      "category": "produce",
+      "avgPrice": 3.00,
+      "daysUntilSpoilage": 5,
+      "perishability": 4,
+      "spriteKey": "spinach",
+      "educationalFact": "Leafy greens wilt fast. Store in sealed container with paper towel."
+    },
+    {
+      "name": "Orange Juice",
+      "category": "dairy",
+      "avgPrice": 4.99,
+      "daysUntilSpoilage": 7,
+      "perishability": 3,
+      "spriteKey": "orange-juice",
+      "educationalFact": "Fresh OJ lasts about a week. Freeze in ice cube trays for smoothies!"
+    },
+    {
+      "name": "Leftovers",
+      "category": "other",
+      "avgPrice": 0.00,
+      "daysUntilSpoilage": 3,
+      "perishability": 4,
+      "spriteKey": "leftovers",
+      "educationalFact": "Leftovers should be eaten within 3-4 days. Label with date!"
+    }
+  ],
+  
+  "categories": [
+    {
+      "id": "produce",
+      "name": "Produce",
+      "color": "#4CAF50",
+      "icon": "🥕",
+      "storageLocation": "fridge"
+    },
+    {
+      "id": "dairy",
+      "name": "Dairy & Eggs",
+      "color": "#FFFFFF",
+      "icon": "🥛",
+      "storageLocation": "fridge"
+    },
+    {
+      "id": "meat",
+      "name": "Meat",
+      "color": "#F44336",
+      "icon": "🥩",
+      "storageLocation": "fridge"
+    },
+    {
+      "id": "fish",
+      "name": "Fish & Seafood",
+      "color": "#2196F3",
+      "icon": "🐟",
+      "storageLocation": "fridge"
+    },
+    {
+      "id": "grains",
+      "name": "Grains & Bread",
+      "color": "#FFC107",
+      "icon": "🍞",
+      "storageLocation": "pantry"
+    },
+    {
+      "id": "frozen",
+      "name": "Frozen Foods",
+      "color": "#00BCD4",
+      "icon": "❄️",
+      "storageLocation": "freezer"
+    },
+    {
+      "id": "canned",
+      "name": "Canned Goods",
+      "color": "#9E9E9E",
+      "icon": "🥫",
+      "storageLocation": "pantry"
+    },
+    {
+      "id": "condiments",
+      "name": "Condiments",
+      "color": "#FF9800",
+      "icon": "🧂",
+      "storageLocation": "fridge"
+    }
+  ]
+}

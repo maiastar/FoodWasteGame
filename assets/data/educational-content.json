@@ -1,0 +1,183 @@
+{
+  "tips": {
+    "shopping": [
+      "Check expiration dates before buying - pick items with the longest freshness!",
+      "Make a shopping list before you go to avoid impulse purchases.",
+      "Buy only what you need - large quantities often lead to waste.",
+      "Choose a mix of fresh and shelf-stable foods for flexibility.",
+      "Store distance matters - shop more often if you're close to reduce spoilage!"
+    ],
+    "cooking": [
+      "Use ingredients that are expiring soon first (FIFO - First In, First Out).",
+      "Cook the right portion size - too much creates leftovers that may be wasted.",
+      "Leftovers can become new meals - be creative!",
+      "Freeze extra portions before they spoil.",
+      "Plan your meals to match what's in your fridge."
+    ],
+    "storage": [
+      "Store fruits and vegetables in the crisper drawer.",
+      "Keep raw meat on the bottom shelf to prevent drips.",
+      "Dairy stays freshest on middle shelves, not the door!",
+      "Ready-to-eat foods and leftovers go on top shelves.",
+      "Proper organization can extend freshness by 3-5 days!"
+    ],
+    "planning": [
+      "Planning meals ahead reduces waste by up to 30%!",
+      "Use a weekly calendar to track what you'll cook.",
+      "Plan recipes that use similar ingredients efficiently.",
+      "Check your inventory before planning to use what you have.",
+      "Build flexibility into your plan for unexpected changes."
+    ],
+    "general": [
+      "Americans waste 30-40% of the food supply - about 133 billion pounds per year!",
+      "The average family of 4 wastes $1,500 worth of food annually.",
+      "Food waste in landfills produces methane, a potent greenhouse gas.",
+      "Small changes in habits can reduce household waste by 50%.",
+      "Understanding expiration labels: 'Best By' doesn't mean spoiled!"
+    ]
+  },
+  
+  "ageGroups": {
+    "4-8": {
+      "simplifiedMode": true,
+      "timerMultiplier": 1.5,
+      "hints": "visual",
+      "complexity": "low",
+      "vocabulary": "simple"
+    },
+    "9-12": {
+      "simplifiedMode": false,
+      "timerMultiplier": 1.0,
+      "hints": "text",
+      "complexity": "medium",
+      "vocabulary": "standard"
+    },
+    "13-15": {
+      "simplifiedMode": false,
+      "timerMultiplier": 0.8,
+      "hints": "minimal",
+      "complexity": "high",
+      "vocabulary": "advanced"
+    }
+  },
+  
+  "tutorialSteps": [
+    {
+      "id": "welcome",
+      "title": "Welcome to Food Waste Simulator!",
+      "message": "Learn how to reduce food waste and save money while having fun!",
+      "scene": "SetupScene"
+    },
+    {
+      "id": "setup_household",
+      "title": "Set Up Your Household",
+      "message": "Choose your family size, income, and other settings. These affect how the game works!",
+      "scene": "SetupScene"
+    },
+    {
+      "id": "dashboard",
+      "title": "Your Dashboard",
+      "message": "This is your home base! See your stats, inventory, and daily events here.",
+      "scene": "ManagementScene"
+    },
+    {
+      "id": "shopping",
+      "title": "Shopping Minigame",
+      "message": "Go shopping! Check dates, stick to your list, and watch your budget.",
+      "scene": "ShoppingMinigame"
+    },
+    {
+      "id": "cooking",
+      "title": "Cooking Minigame",
+      "message": "Time to cook! Use expiring ingredients first and make the right portion size.",
+      "scene": "CookingMinigame"
+    },
+    {
+      "id": "fridge",
+      "title": "Organize Your Fridge",
+      "message": "Put items in the correct zones to keep food fresh longer!",
+      "scene": "FridgeMinigame"
+    },
+    {
+      "id": "planning",
+      "title": "Plan Your Meals",
+      "message": "Planning ahead is key! Use the calendar to schedule meals and reduce waste.",
+      "scene": "PlanningMinigame"
+    }
+  ],
+  
+  "achievements": [
+    {
+      "id": "first_shop",
+      "name": "First Trip",
+      "description": "Complete your first shopping trip",
+      "icon": "🛒"
+    },
+    {
+      "id": "first_meal",
+      "name": "Home Chef",
+      "description": "Cook your first meal",
+      "icon": "🍳"
+    },
+    {
+      "id": "organized",
+      "name": "Organizer",
+      "description": "Organize your fridge perfectly",
+      "icon": "📦"
+    },
+    {
+      "id": "planner",
+      "name": "Master Planner",
+      "description": "Plan a full week of meals",
+      "icon": "📅"
+    },
+    {
+      "id": "zero_waste_day",
+      "name": "Zero Waste Day",
+      "description": "Complete a day with no food waste",
+      "icon": "♻️"
+    },
+    {
+      "id": "week_complete",
+      "name": "Week Warrior",
+      "description": "Complete one full week",
+      "icon": "⭐"
+    },
+    {
+      "id": "awareness_expert",
+      "name": "Waste Aware",
+      "description": "Reach 80% waste awareness",
+      "icon": "📚"
+    },
+    {
+      "id": "budget_master",
+      "name": "Budget Pro",
+      "description": "Stay under budget for 3 weeks",
+      "icon": "💰"
+    }
+  ],
+  
+  "wasteFactsByAge": {
+    "4-8": [
+      "Food waste is when we throw away food we could have eaten!",
+      "Keeping food fresh helps it last longer.",
+      "Planning what to eat helps us not waste food.",
+      "Some foods last a long time, others need to be eaten soon!"
+    ],
+    "9-12": [
+      "Americans throw away nearly 40% of their food supply.",
+      "One family can waste over $1,500 of food each year.",
+      "Proper storage can keep food fresh 3-5 days longer.",
+      "Planning meals ahead can reduce waste by 30%.",
+      "Food waste creates methane gas which harms our planet."
+    ],
+    "13-15": [
+      "The US wastes 133 billion pounds of food annually, worth $161 billion.",
+      "Food waste is the single largest component of landfills (22%).",
+      "Wasted food generates 8-10% of global greenhouse gas emissions.",
+      "Understanding date labels: 'Best By' indicates quality, not safety.",
+      "Supply chain losses account for 30% of waste, but households contribute 43%.",
+      "Composting and proper planning can reduce household waste by 50%."
+    ]
+  }
+}

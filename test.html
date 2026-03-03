@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phaser Test</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #333; color: white; font-family: Arial; }
+        #status { padding: 20px; background: #444; margin: 10px 0; }
+        .success { color: #4CAF50; }
+        .error { color: #F44336; }
+    </style>
+</head>
+<body>
+    <h1>Phaser.js Loading Test</h1>
+    <div id="status">Checking...</div>
+    <div id="game-container"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script>
+        const status = document.getElementById('status');
+        
+        // Test 1: Check if Phaser loaded
+        if (typeof Phaser !== 'undefined') {
+            status.innerHTML += '<div class="success">✓ Phaser loaded successfully (v' + Phaser.VERSION + ')</div>';
+            
+            // Test 2: Try to create a game
+            try {
+                const config = {
+                    type: Phaser.AUTO,
+                    width: 800,
+                    height: 600,
+                    parent: 'game-container',
+                    backgroundColor: '#2196F3',
+                    scene: {
+                        create: function() {
+                            this.add.text(400, 300, 'Phaser is working!', {
+                                fontSize: '32px',
+                                color: '#ffffff'
+                            }).setOrigin(0.5);
+                            
+                            status.innerHTML += '<div class="success">✓ Game canvas created</div>';
+                        }
+                    }
+                };
+                
+                const game = new Phaser.Game(config);
+                status.innerHTML += '<div class="success">✓ Game initialized</div>';
+                
+            } catch(e) {
+                status.innerHTML += '<div class="error">✗ Error creating game: ' + e.message + '</div>';
+            }
+        } else {
+            status.innerHTML += '<div class="error">✗ Phaser did not load</div>';
+        }
+    </script>
+</body>
+</html>
