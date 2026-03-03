@@ -1,113 +1,77 @@
 {
   "introduction": {
-    "ly": "Hi! I'm Ly! I love tasty food and having fun!",
-    "ma": "Hello. I'm Ma. I think about what makes sense.",
-    "al": "Greetings. I'm Al. I care about doing things right!"
+    "advice": "Welcome! Use the Actions panel on the right to shop, cook, organize your fridge, and plan meals. Check your Stats and Inventory each day to stay on top of things. Let's reduce food waste together!"
   },
-  
+
   "decisions": {
     "shopping-entry": {
-      "ly": "Let's buy everything! All the snacks and treats!",
-      "ma": "Check your shopping list and stick to your budget.",
-      "al": "Only buy exactly what's needed. Nothing more, nothing less!"
+      "advice": "Before you add items to your cart, check your Inventory — you may already have things at home. Stick to your list to avoid overbuying and save money."
     },
-    
+
     "cooking-entry": {
-      "ly": "Ugh, cooking is boring. Let's just eat snacks!",
-      "ma": "Use ingredients that are expiring soon to reduce waste.",
-      "al": "Cook the most nutritious, perfectly balanced meal!"
+      "advice": "Check your Inventory for items marked 'Expiring Soon' — cook those first to prevent waste. Match your portion size to your household so you don't make too much."
     },
-    
+
     "fridge-entry": {
-      "ly": "Who cares about organizing? Let's play games instead!",
-      "ma": "Good organization helps food last longer and reduces waste.",
-      "al": "Every item must be perfectly placed in optimal conditions!"
+      "advice": "Keep expiring items at the front so they're easy to see and use first. Proper storage helps food last longer and cuts down on waste."
     },
-    
+
     "planning-entry": {
-      "ly": "Planning is no fun! Let's just wing it!",
-      "ma": "A good meal plan helps you shop smarter and waste less.",
-      "al": "Plan every single meal perfectly for the entire week!"
+      "advice": "Planning your meals for the week helps you write a focused shopping list. Think about how many people you're feeding and how many days you want to plan for."
     }
   },
-  
+
   "feedback": {
     "shopping-complete-good": {
-      "ly": "That was okay, I guess. Could've been more fun...",
-      "ma": "Good shopping! You stayed on budget and got what you needed.",
-      "al": "Acceptable, but you could still improve your choices."
+      "advice": "Nice shopping trip! You stayed on budget and got what you needed. Head back to the dashboard and cook any items that are close to expiring."
     },
-    
+
     "shopping-complete-overspent": {
-      "ly": "Yay! We got so much stuff! That was awesome!",
-      "ma": "You went over budget. Try to stick to the list next time.",
-      "al": "This is wasteful! You must have better self-control!"
+      "advice": "You went over budget this trip. Next time, check your list before adding extras. Try the Plan Meals action before shopping to keep spending focused."
     },
-    
+
     "shopping-complete-underbudget": {
-      "ly": "Boring! We barely bought anything fun!",
-      "ma": "Great job staying under budget! Your family will eat well.",
-      "al": "Good restraint, but did you forget anything important?"
+      "advice": "Great restraint — you came in under budget! Make sure you have enough ingredients to feed your household for the next few days."
     },
-    
+
     "cooking-complete-good": {
-      "ly": "Finally, some food! I'm starving!",
-      "ma": "Nice cooking! Your family will enjoy this meal.",
-      "al": "Decent work, though you could optimize portions better."
+      "advice": "Meal cooked! Check your Inventory for any leftovers you stored. If anything is still expiring soon, plan to cook again tomorrow."
     },
-    
+
     "cooking-complete-smart": {
-      "ly": "I wanted something tastier than those old vegetables!",
-      "ma": "Excellent! You used items before they spoiled. Smart thinking!",
-      "al": "Very good. This is exactly how one should prevent waste."
+      "advice": "Well done — you used items that were about to expire! That's one of the best ways to cut food waste. Keep an eye on expiring items each day."
     },
-    
+
     "cooking-complete-toolarge": {
-      "ly": "More food means more leftovers means more snacking later!",
-      "ma": "Those portions seem large. You might end up with excess.",
-      "al": "Wasteful portions! Calculate family needs more precisely!"
+      "advice": "You made more food than your household needs right now. Store leftovers in the fridge or freezer right away so nothing goes to waste."
     },
-    
+
     "day-summary-excellent": {
-      "ly": "Ugh, this is so boring. Where are the treats?",
-      "ma": "Amazing! Less than 1 lb of waste today. Keep it up!",
-      "al": "Good work, but aim for absolutely zero waste next time."
+      "advice": "Incredible day — under 1 lb of waste! Check your Inventory for any items expiring in the next day or two and plan a meal around them."
     },
-    
+
     "day-summary-good": {
-      "ly": "Not bad, but we could've had more fun...",
-      "ma": "Good job! Under 2 lbs of waste is solid progress.",
-      "al": "Acceptable, but there's still room for improvement."
+      "advice": "Good day — under 2 lbs of waste. To keep improving, try organizing your fridge so expiring items are front and center."
     },
-    
+
     "day-summary-okay": {
-      "ly": "Well, at least we enjoyed some of that food!",
-      "ma": "3 lbs of waste is concerning. Let's plan better tomorrow.",
-      "al": "This is disappointing. You need to do much better."
+      "advice": "About 3 lbs wasted today. Try using the Plan Meals action before your next shopping trip to buy only what you will actually use."
     },
-    
+
     "day-summary-poor": {
-      "ly": "Who cares? We had fun eating what we wanted!",
-      "ma": "4+ lbs wasted is too much. Review your planning and storage.",
-      "al": "Unacceptable! This waste is irresponsible and careless!"
+      "advice": "Over 4 lbs wasted today. Check your Inventory for spoiled items and clear them out. Then use Plan Meals to build a smarter list for your next shop."
     },
-    
+
     "achievement-earned": {
-      "ly": "Yay! A shiny badge! Can we eat it?",
-      "ma": "Congratulations! Your hard work is paying off.",
-      "al": "Well done, but don't let this success make you complacent."
+      "advice": "You earned a new achievement! Keep up the good habits — check your Stats panel to see your progress and look for more ways to cut waste."
     },
-    
+
     "fridge-complete": {
-      "ly": "That was tedious. Can we eat now?",
-      "ma": "Good organization! Your food will stay fresh longer.",
-      "al": "Better, but perfect organization requires daily maintenance."
+      "advice": "Great fridge session! Items are better organized now. Head to Cook Meal if anything is still expiring soon, or End Day to move forward."
     },
-    
+
     "planning-complete": {
-      "ly": "Planning is so boring! I want spontaneous fun!",
-      "ma": "Excellent planning! This will help reduce waste all week.",
-      "al": "Good, but ensure you follow this plan precisely."
+      "advice": "Meal plan saved! When you're ready to shop, the list will reflect your planned recipes. Head to Go Shopping next to put the plan into action."
     }
   }
 }

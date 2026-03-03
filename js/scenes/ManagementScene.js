@@ -140,7 +140,7 @@ class ManagementScene extends Phaser.Scene {
         const shouldGlow = grade.startsWith('A');
         
         const gradeBadge = this.createBadge(
-            panelX + 310, panelY + 95,
+            panelX + 345, panelY + 90,
             '🎯', grade, gradeColor, 42, shouldGlow
         );
         
@@ -169,11 +169,11 @@ class ManagementScene extends Phaser.Scene {
         // Streak Counter (if streak > 0)
         if (this.household.lowWasteStreak > 0) {
             const streakBadge = this.createBadge(
-                panelX + 280, panelY + 75,
+                panelX + 275, panelY + 90,
                 '🔥', `${this.household.lowWasteStreak}`, 0xFF5722, 45, true
             );
             
-            this.add.text(panelX + 280, panelY + 105, 'Day Streak!', {
+            this.add.text(panelX + 275, panelY + 120, 'Day Streak!', {
                 fontSize: '12px',
                 fontFamily: 'Fredoka, Arial',
                 color: '#FF5722',
