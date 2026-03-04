@@ -61,10 +61,15 @@ class GroceryTravelScene extends Phaser.Scene {
             });
         });
         
-        const car = this.add.text(-120, height - 168, '🚙', { fontSize: '90px' }).setOrigin(0.5);
+        const goingToStore = this.direction === 'store';
+        const car = this.add.text(
+            goingToStore ? -120 : width + 120,
+            height - 168, '🚗', { fontSize: '90px' }
+        ).setOrigin(0.5);
+        if (!goingToStore) car.setScale(-1, 1);
         this.tweens.add({
             targets: car,
-            x: width + 120,
+            x: goingToStore ? width + 120 : -120,
             duration: 3000,
             ease: 'Sine.easeInOut'
         });

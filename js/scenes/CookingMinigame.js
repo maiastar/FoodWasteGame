@@ -235,8 +235,8 @@ class CookingMinigame extends Phaser.Scene {
         });
         
         // Make entire card clickable
-        bg.on('pointerdown', () => {
-            console.log(`🍳 Clicking recipe: ${recipe.name}`);
+        bg.on('pointerdown', (_p, _x, _y, event) => {
+            event.stopPropagation();
             this.selectRecipe(recipe);
         });
     }
@@ -248,8 +248,8 @@ class CookingMinigame extends Phaser.Scene {
         this.selectedRecipe = recipe;
         console.log(`📖 Selected recipe: ${recipe.name}`);
         
-        // Clear selection screen
-        this.children.removeAll();
+        // destroy(true) propagates to container children, removing their input registrations
+        this.children.list.slice().forEach(obj => obj.destroy(true));
         
         // Show cooking interface
         this.showCookingInterface();
@@ -610,8 +610,8 @@ class CookingMinigame extends Phaser.Scene {
             button.setScale(1);
         });
         
-        bg.on('pointerdown', () => {
-            console.log('👨‍🍳 Cook button clicked!');
+        bg.on('pointerdown', (_p, _x, _y, event) => {
+            event.stopPropagation();
             this.cookMeal();
         });
     }
@@ -743,11 +743,12 @@ class CookingMinigame extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // Overlay
+        // Overlay — blocks all clicks from reaching the scene beneath
         const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
         overlay.setOrigin(0, 0);
         overlay.setInteractive();
         overlay.setDepth(3000);
+        overlay.on('pointerdown', (_p, _x, _y, event) => { event.stopPropagation(); });
         
         // Results panel
         const panel = this.add.rectangle(width / 2, height / 2, 700, 500, 0xffffff);
@@ -813,7 +814,8 @@ class CookingMinigame extends Phaser.Scene {
         
         continueBtn.add([bg, text]);
         
-        bg.on('pointerdown', () => {
+        bg.on('pointerdown', (_p, _x, _y, event) => {
+            event.stopPropagation();
             // Show hydra feedback before returning
             const usedExpiringItems = this.selectedIngredients.some(item => 
                 item.daysRemaining <= 2
@@ -918,9 +920,12 @@ class CookingMinigame extends Phaser.Scene {
         
         const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0).setDepth(3500);
         overlay.setInteractive();
+        overlay.on('pointerdown', (_p, _x, _y, event) => { event.stopPropagation(); });
         
         const panel = this.add.rectangle(width / 2, height / 2, 760, 360, 0xffffff).setDepth(3501);
         panel.setStrokeStyle(4, 0xFF9800);
+        panel.setInteractive();
+        panel.on('pointerdown', (_p, _x, _y, event) => { event.stopPropagation(); });
         
         const title = this.add.text(width / 2, height / 2 - 120, `📦 You made ${leftoverServings} leftover serving(s)!`, {
             fontSize: '30px',
@@ -930,11 +935,12 @@ class CookingMinigame extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(3502);
         
         const options = [
-            { id: 'fridge', label: 'Store in fridge (eat soon)', y: -40 },
-            { id: 'freezer', label: 'Freeze for later', y: 20 },
-            { id: 'counter', label: 'Leave out (riskier)', y: 80 }
+            { id: 'fridge', label: '🧊 Store in fridge (eat soon)', y: -40 },
+            { id: 'freezer', label: '❄️ Freeze for later', y: 20 },
+            { id: 'counter', label: '⚠️ Leave out (riskier)', y: 80 }
         ];
         
+        let dismissed = false;
         const objects = [overlay, panel, title];
         options.forEach((option) => {
             const button = this.add.rectangle(width / 2, height / 2 + option.y, 520, 48, 0xF5F5F5).setDepth(3502);
@@ -948,8 +954,14 @@ class CookingMinigame extends Phaser.Scene {
             }).setOrigin(0.5).setDepth(3503);
             objects.push(button, label);
             
-            button.on('pointerdown', () => {
-                objects.forEach(obj => obj.destroy());
+            button.on('pointerdown', (_p, _x, _y, event) => {
+                event.stopPropagation();
+                if (dismissed) return;
+                dismissed = true;
+                objects.forEach(obj => {
+                    if (obj.disableInteractive) obj.disableInteractive();
+                    obj.destroy();
+                });
                 onChosen(option.id);
             });
         });

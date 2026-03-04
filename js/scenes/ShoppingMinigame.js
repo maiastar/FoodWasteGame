@@ -171,18 +171,19 @@ class ShoppingMinigame extends Phaser.Scene {
         
         const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0, 0).setDepth(3000);
         overlay.setInteractive();
+        overlay.on('pointerdown', (_p, _x, _y, event) => { event.stopPropagation(); });
         
         const panel = this.add.rectangle(width / 2, height / 2, 860, 520, 0xffffff).setDepth(3001);
         panel.setStrokeStyle(4, 0x4CAF50);
         
-        this.add.text(width / 2, height / 2 - 210, '🧾 Pick Preset Recipes for This Week', {
+        const modalTitle = this.add.text(width / 2, height / 2 - 210, '🧾 Pick Preset Recipes for This Week', {
             fontSize: '34px',
             fontFamily: 'Fredoka, Arial',
             color: '#2E7D32',
             fontStyle: 'bold'
         }).setOrigin(0.5).setDepth(3002);
         
-        this.add.text(width / 2, height / 2 - 170, 'Choose up to 3 recipes. Your shopping list will adapt.', {
+        const modalSubtitle = this.add.text(width / 2, height / 2 - 170, 'Choose up to 3 recipes. Your shopping list will adapt.', {
             fontSize: '18px',
             fontFamily: 'Fredoka, Arial',
             color: '#555555'
@@ -196,7 +197,7 @@ class ShoppingMinigame extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0.5).setDepth(3002);
         
-        const overlayObjects = [overlay, panel, selectionText];
+        const overlayObjects = [overlay, panel, modalTitle, modalSubtitle, selectionText];
         
         recipes.forEach((recipe, index) => {
             const col = index % 2;
@@ -245,7 +246,10 @@ class ShoppingMinigame extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(3003);
         overlayObjects.push(continueLabel);
         
+        let selectorDismissed = false;
         continueBtn.on('pointerdown', () => {
+            if (selectorDismissed) return;
+            selectorDismissed = true;
             const usingPlanning = this.selectedPresetRecipes.length > 0;
             this.household.recordDecision(
                 usingPlanning ? 'shopping_planned' : 'shopping_unplanned',
@@ -253,7 +257,10 @@ class ShoppingMinigame extends Phaser.Scene {
                 { recipesSelected: this.selectedPresetRecipes.length }
             );
             this.household.presetRecipeIds = this.selectedPresetRecipes.map(r => r.id);
-            overlayObjects.forEach(obj => obj.destroy());
+            overlayObjects.forEach(obj => {
+                if (obj.disableInteractive) obj.disableInteractive();
+                obj.destroy();
+            });
             onComplete();
         });
     }

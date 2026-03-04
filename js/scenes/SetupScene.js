@@ -43,8 +43,8 @@ class SetupScene extends Phaser.Scene {
         }).setOrigin(0.5);
         
         // Create configuration sections
-        const startY = 140;
-        const sectionSpacing = 78;
+        const startY = 155;
+        const sectionSpacing = 115;
         
         this.createFamilySizeSelector(width / 2, startY);
         this.createAgeRangeSelector(width / 2, startY + sectionSpacing);

@@ -240,7 +240,8 @@ class PlanningMinigame extends Phaser.Scene {
         });
         
         // Click to select recipe
-        bg.on('pointerdown', () => {
+        bg.on('pointerdown', (_p, _x, _y, event) => {
+            event.stopPropagation();
             this.showRecipeSelector(day, mealType, cell);
         });
         
@@ -254,11 +255,28 @@ class PlanningMinigame extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // Animated overlay
+        // All modal objects tracked here for complete cleanup
+        const modalObjects = [];
+        let dismissed = false;
+
+        const closeModal = () => {
+            if (dismissed) return;
+            dismissed = true;
+            modalObjects.forEach(obj => {
+                if (obj && obj.active) {
+                    if (obj.disableInteractive) obj.disableInteractive();
+                    obj.destroy();
+                }
+            });
+        };
+        
+        // Animated overlay — stopPropagation blocks click-through to calendar cells
         const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0);
         overlay.setOrigin(0, 0);
         overlay.setInteractive();
         overlay.setDepth(5000);
+        overlay.on('pointerdown', (_p, _x, _y, event) => { event.stopPropagation(); });
+        modalObjects.push(overlay);
         
         this.tweens.add({
             targets: overlay,
@@ -275,10 +293,12 @@ class PlanningMinigame extends Phaser.Scene {
         
         const panelShadow = this.add.rectangle(panelX + 5, panelY + 5, panelWidth, panelHeight, 0x000000, 0.25);
         panelShadow.setOrigin(0, 0).setDepth(5001);
+        modalObjects.push(panelShadow);
         
         const panel = this.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0xffffff);
         panel.setStrokeStyle(4, 0x9C27B0);
         panel.setOrigin(0, 0).setDepth(5001);
+        modalObjects.push(panel);
         
         // Slide in animation
         panel.setY(panelY + 50);
@@ -298,6 +318,7 @@ class PlanningMinigame extends Phaser.Scene {
         // Gradient header
         const headerBar = this.add.rectangle(panelX, panelY, panelWidth, 70, 0x9C27B0);
         headerBar.setOrigin(0, 0).setDepth(5002);
+        modalObjects.push(headerBar);
         
         // Title
         const title = this.add.text(width / 2, panelY + 35, `Day ${day} • ${mealType}`, {
@@ -306,6 +327,7 @@ class PlanningMinigame extends Phaser.Scene {
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5).setDepth(5003);
+        modalObjects.push(title);
         
         // Meal type icon
         const mealIcons = {
@@ -316,6 +338,7 @@ class PlanningMinigame extends Phaser.Scene {
         const mealIcon = this.add.text(panelX + 30, panelY + 35, mealIcons[mealType] || '🍽️', {
             fontSize: '32px'
         }).setOrigin(0.5).setDepth(5003);
+        modalObjects.push(mealIcon);
         
         // Filter recipes by meal category
         const categoryMap = {
@@ -381,6 +404,7 @@ class PlanningMinigame extends Phaser.Scene {
             
             cardContainer.add([cardShadow, cardBg, accent, iconCircle, recipeIcon, recipeName, servingsInfo, arrow]);
             cardContainer.setDepth(5003);
+            modalObjects.push(cardContainer);
             
             // Hover effects
             cardBg.on('pointerover', () => {
@@ -395,25 +419,16 @@ class PlanningMinigame extends Phaser.Scene {
                 cardContainer.setScale(1);
             });
             
-            cardBg.on('pointerdown', () => {
+            cardBg.on('pointerdown', (_p, _x, _y, event) => {
+                event.stopPropagation();
                 this.assignRecipeToSlot(day, mealType, recipe, cell);
-                
-                // Cleanup with fade out
-                this.tweens.add({
-                    targets: [overlay, panel, panelShadow],
-                    alpha: 0,
-                    duration: 200,
-                    onComplete: () => {
-                        overlay.destroy();
-                        panel.destroy();
-                        panelShadow.destroy();
-                    }
-                });
+                closeModal();
             });
         });
         
         // Clear button with enhanced styling
         const clearBtn = this.add.container(width / 2 - 150, panelY + panelHeight - 45).setDepth(5004);
+        modalObjects.push(clearBtn);
         
         const clearBg = this.add.rectangle(0, 0, 200, 50, 0xFF9800);
         clearBg.setStrokeStyle(3, 0xffffff);
@@ -438,22 +453,15 @@ class PlanningMinigame extends Phaser.Scene {
             clearBg.setFillStyle(0xFF9800);
         });
         
-        clearBg.on('pointerdown', () => {
+        clearBg.on('pointerdown', (_p, _x, _y, event) => {
+            event.stopPropagation();
             this.clearMealSlot(day, mealType, cell);
-            this.tweens.add({
-                targets: [overlay, panel, panelShadow],
-                alpha: 0,
-                duration: 200,
-                onComplete: () => {
-                    overlay.destroy();
-                    panel.destroy();
-                    panelShadow.destroy();
-                }
-            });
+            closeModal();
         });
         
         // Cancel button
         const cancelBtn = this.add.container(width / 2 + 150, panelY + panelHeight - 45).setDepth(5004);
+        modalObjects.push(cancelBtn);
         
         const cancelBg = this.add.rectangle(0, 0, 200, 50, 0x757575);
         cancelBg.setStrokeStyle(3, 0xffffff);
@@ -478,17 +486,9 @@ class PlanningMinigame extends Phaser.Scene {
             cancelBg.setFillStyle(0x757575);
         });
         
-        cancelBg.on('pointerdown', () => {
-            this.tweens.add({
-                targets: [overlay, panel, panelShadow],
-                alpha: 0,
-                duration: 200,
-                onComplete: () => {
-                    overlay.destroy();
-                    panel.destroy();
-                    panelShadow.destroy();
-                }
-            });
+        cancelBg.on('pointerdown', (_p, _x, _y, event) => {
+            event.stopPropagation();
+            closeModal();
         });
     }
     
