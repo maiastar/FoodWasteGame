@@ -1013,10 +1013,14 @@ class ShoppingMinigame extends Phaser.Scene {
         
         console.log(`💳 Checking out: ${this.cart.length} items, $${this.cartTotal.toFixed(2)}`);
         
-        // Add items to inventory
+        // Add items to inventory and track total purchased kg (Fp for mass balance)
+        let totalPurchasedKg = 0;
         this.cart.forEach(item => {
             this.inventory.addItem(item);
+            // getTotalWeight returns lbs; convert to kg (×0.4536)
+            totalPurchasedKg += item.getTotalWeight() * 0.4536;
         });
+        this.household.addPurchasedKg(totalPurchasedKg);
         
         // Spend money
         this.household.spendMoney(this.cartTotal);

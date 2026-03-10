@@ -76,6 +76,9 @@ class StochasticModel {
                     servings: servingsConsumed
                 });
                 
+                // Track consumed kg for Fc in mass balance (lbs → kg: ×0.4536)
+                household.addConsumedKg(item.getWeightPerServing() * servingsConsumed * 0.4536);
+                
                 inventory.consumeItem(item.id, servingsConsumed);
             } else {
                 // Item neither spoiled nor consumed - just ages
@@ -133,33 +136,34 @@ class StochasticModel {
      * @returns {number} Probability (0-1)
      */
     calculateConsumeProbability(item, household, inventory) {
-        let probability = 0.25; // 25% base consumption chance
+        // Base probability from paper: Pc = Cd / Fs
+        // Cd = daily household servings needed; Fs = total servings in inventory
+        const Cd = household.familySize * 3; // 3 servings per person per day
+        const Fs = Math.max(1, inventory.getSummary().totalServings);
+        let probability = Math.min(0.55, Cd / Fs); // cap prevents runaway when Fs is tiny
         
         // Higher if item is in today's meal plan
         const todaysMeals = household.getMealsForDay(household.day);
         if (todaysMeals.length > 0) {
-            // Check if this item is needed for planned meals
-            // (In full implementation, would check recipe requirements)
-            probability += 0.4;
+            probability += 0.35;
         }
         
-        // Much higher if item is expiring soon (use it or lose it!)
-        if (item.freshness <= 2) {
+        // Much higher if item is approaching Ncrit (qualityValue 40-60)
+        if (item.qualityValue <= 60 && item.qualityValue > 40) {
             probability += 0.25 * (household.wasteAwareness / 100);
         }
-        
-        if (item.freshness <= 1) {
-            probability += 0.35 * (household.wasteAwareness / 100);
+        if (item.qualityValue <= 50 && item.qualityValue > 40) {
+            probability += 0.30 * (household.wasteAwareness / 100);
         }
         
-        // Family size affects consumption rate
+        // Family size factor
         const familySizeFactor = Math.min(household.familySize / 4, 1.3);
         probability *= familySizeFactor;
         
-        // Random daily variation (family might eat out, have different appetites)
-        probability *= (0.8 + Math.random() * 0.4); // 80-120% variation
+        // Random daily variation (±20%)
+        probability *= (0.8 + Math.random() * 0.4);
         
-        return Math.min(probability, 0.95); // Cap at 95% (never 100% certain)
+        return Math.min(probability, 0.95);
     }
     
     /**

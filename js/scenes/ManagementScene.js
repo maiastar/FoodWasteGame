@@ -144,6 +144,22 @@ class ManagementScene extends Phaser.Scene {
             '🎯', grade, gradeColor, 42, shouldGlow
         );
         
+        // Efficiency Ratio E = Fc / Fp
+        const effPct = Math.round(this.household.getEfficiencyRatio() * 100);
+        const effColor = effPct >= 75 ? '#4CAF50' : effPct >= 50 ? '#FF9800' : '#F44336';
+        this.add.text(panelX + 20, panelY + 148, '⚡ Efficiency', {
+            fontSize: '14px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#666666',
+            fontStyle: 'bold'
+        }).setOrigin(0, 0);
+        this.add.text(panelX + 20, panelY + 166, `${effPct}% consumed`, {
+            fontSize: '18px',
+            fontFamily: 'Fredoka, Arial',
+            color: effColor,
+            fontStyle: 'bold'
+        }).setOrigin(0, 0);
+        
         // Total Waste with animated text
         this.add.text(panelX + 20, panelY + 200, '🗑️ Total Waste', {
             fontSize: '16px',
@@ -649,13 +665,15 @@ class ManagementScene extends Phaser.Scene {
         overlay.setInteractive();
         overlay.setDepth(1000);
         
-        // Results panel
-        const panel = this.add.rectangle(width / 2, height / 2, 600, 400, 0xffffff);
+        // Results panel — taller at end of week to show mass balance
+        const isEndOfWeek = results.day % 7 === 0;
+        const panelHeight = isEndOfWeek ? 520 : 400;
+        const panel = this.add.rectangle(width / 2, height / 2, 600, panelHeight, 0xffffff);
         panel.setStrokeStyle(5, 0x333333);
         panel.setDepth(1001);
         
         // Title
-        const titleText = this.add.text(width / 2, height / 2 - 160, `📅 Day ${results.day} Summary`, {
+        const titleText = this.add.text(width / 2, height / 2 - (panelHeight / 2 - 40), `📅 Day ${results.day} Summary`, {
             fontSize: '36px',
             fontFamily: 'Fredoka, Arial',
             color: '#333333',
@@ -663,8 +681,9 @@ class ManagementScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(1002);
         
         // Results
-        const resultsY = height / 2 - 90;
-        const lineHeight = 40;
+        const panelTop = height / 2 - panelHeight / 2;
+        const resultsY = panelTop + 80;
+        const lineHeight = 38;
         
         const lines = [
             `🗑️ Waste: ${results.wasteResults.wasteWeight.toFixed(2)} lbs ($${results.wasteResults.wasteCost.toFixed(2)})`,
@@ -689,6 +708,42 @@ class ManagementScene extends Phaser.Scene {
             resultTexts.push(text);
         });
         
+        // Weekly Mass Balance block (shown when day is a multiple of 7)
+        // Fp - Fc - Fw = dFs/dt  (Conservation of Mass)
+        if (isEndOfWeek && this.household.lastWeekMassBalance) {
+            const mb = this.household.lastWeekMassBalance;
+            const mbY = resultsY + lines.length * lineHeight + 18;
+            
+            const divider = this.add.rectangle(width / 2, mbY, 520, 2, 0xDDDDDD);
+            divider.setDepth(1002);
+            resultTexts.push(divider);
+            
+            const mbTitle = this.add.text(width / 2, mbY + 10, '⚖️ Weekly Mass Balance  (Fp − Fc − Fw = ΔFs)', {
+                fontSize: '17px',
+                fontFamily: 'Fredoka, Arial',
+                color: '#555555',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0).setDepth(1002);
+            resultTexts.push(mbTitle);
+            
+            const mbLines = [
+                `Purchased  (Fp): ${mb.purchased.toFixed(2)} kg`,
+                `Consumed   (Fc): ${mb.consumed.toFixed(2)} kg`,
+                `Wasted     (Fw): ${mb.wasted.toFixed(2)} kg`,
+                `Stored change (ΔFs): ${mb.stored >= 0 ? '+' : ''}${mb.stored.toFixed(2)} kg`,
+            ];
+            const mbColors = ['#2196F3', '#4CAF50', '#F44336', mb.stored >= 0 ? '#9C27B0' : '#FF9800'];
+            
+            mbLines.forEach((line, i) => {
+                const t = this.add.text(width / 2, mbY + 35 + i * 30, line, {
+                    fontSize: '18px',
+                    fontFamily: 'Fredoka, Arial',
+                    color: mbColors[i]
+                }).setOrigin(0.5, 0).setDepth(1002);
+                resultTexts.push(t);
+            });
+        }
+        
         // Show hydra feedback on daily results
         this.time.delayedCall(800, () => {
             const hydraGuide = new HydraGuide(this);
@@ -701,8 +756,8 @@ class ManagementScene extends Phaser.Scene {
             }
         });
         
-        // Go to Bed button
-        const bedBtn = this.add.container(width / 2, height / 2 + 150);
+        // Go to Bed button — pinned near bottom of panel
+        const bedBtn = this.add.container(width / 2, height / 2 + panelHeight / 2 - 45);
         
         const btnBg = this.add.rectangle(0, 0, 250, 65, 0x4CAF50);
         btnBg.setStrokeStyle(5, 0xffffff);

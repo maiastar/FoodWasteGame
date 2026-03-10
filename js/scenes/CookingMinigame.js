@@ -637,13 +637,15 @@ class CookingMinigame extends Phaser.Scene {
             return;
         }
         
-        // Consume ingredients (prioritize expiring items)
+        // Consume ingredients (prioritize expiring items) and track Fc for mass balance
         this.selectedRecipe.ingredients.forEach(ingredient => {
             const needed = Math.ceil(ingredient.quantity * this.portionMultiplier);
-            
+
             for (let i = 0; i < needed; i++) {
                 const item = this.inventory.findBestItemForRecipe(ingredient.name);
                 if (item) {
+                    // Track consumed kg (lbs → kg: ×0.4536) before removing from inventory
+                    this.household.addConsumedKg(item.getWeightPerServing() * 0.4536);
                     this.inventory.consumeItem(item.id, 1);
                 }
             }

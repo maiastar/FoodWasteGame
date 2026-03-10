@@ -12,24 +12,29 @@ class FoodItem {
         // Core properties
         this.id = this.generateId();
         this.name = config.name || 'Unknown Item';
-        this.category = config.category || 'other'; // 'produce', 'dairy', 'meat', 'grains', 'frozen', 'other'
+        this.category = config.category || 'other';
         this.price = config.price || 0;
         
-        // Freshness tracking
+        // Freshness tracking (kept for display compatibility)
         this.daysUntilSpoilage = config.daysUntilSpoilage || 7;
-        this.maxFreshness = this.daysUntilSpoilage; // Original freshness for comparison
-        this.freshness = this.daysUntilSpoilage; // Current days remaining
+        this.maxFreshness = this.daysUntilSpoilage;
+        this.freshness = config.freshness !== undefined ? config.freshness : this.daysUntilSpoilage;
+        
+        // Exponential decay model: N(t) = 100 * e^(-k * dayAge), Ncrit = 40
+        // k_base = ln(100/40) / daysUntilSpoilage = 0.916 / daysUntilSpoilage
+        this.dayAge = config.dayAge || 0;
+        this.qualityValue = config.qualityValue !== undefined ? config.qualityValue : 100;
         
         // Quantity (servings or units)
         this.quantity = config.quantity || 1;
-        this.originalQuantity = this.quantity;
+        this.originalQuantity = config.originalQuantity || this.quantity;
         
         // Perishability rating (1-5, higher = spoils faster)
         this.perishability = config.perishability || this.calculatePerishability();
         
         // Storage
-        this.location = config.location || this.getDefaultLocation(); // 'pantry', 'fridge', 'freezer', 'counter'
-        this.isProperlyStored = true; // Set by fridge minigame
+        this.location = config.location || this.getDefaultLocation();
+        this.isProperlyStored = config.isProperlyStored !== undefined ? config.isProperlyStored : true;
         
         // Metadata
         this.dayPurchased = config.dayPurchased || 1;
@@ -106,49 +111,70 @@ class FoodItem {
     }
     
     /**
-     * Update freshness (called daily by simulation)
-     * @param {number} storageQuality - Quality of storage (0-1)
-     * @returns {Object} Update result with status
+     * Compute the spoilage rate constant k for this item.
+     * k_base = ln(N0/Ncrit) / daysUntilSpoilage = ln(100/40) / maxFreshness ≈ 0.916 / maxFreshness
+     * Storage multipliers reflect paper values: k_room/k_fridge = 0.25/0.10 = 2.5
+     * @returns {number} k value
+     */
+    getSpoilageK() {
+        const N0 = 100, Ncrit = 40;
+        const kBase = Math.log(N0 / Ncrit) / Math.max(1, this.maxFreshness);
+        
+        if (this.location === 'freezer') return kBase * 0.1;
+        if (!this.isProperlyStored) return kBase * 1.5;
+        // Items that should be cold but are left at room temp decay 2.5x faster
+        const shouldBeCold = ['fridge', 'freezer'].includes(this.getDefaultLocation());
+        if (shouldBeCold && this.location === 'counter') return kBase * 2.5;
+        return kBase;
+    }
+
+    /**
+     * Update quality using first-order exponential decay: N(t) = 100 * e^(-k * dayAge)
+     * Called daily by simulation. Also keeps freshness counter in sync for UI display.
+     * @param {number} storageQuality - Quality of storage (0-1, used for legacy compatibility)
+     * @returns {Object} Update result with status and qualityValue
      */
     updateFreshness(storageQuality = 0.7) {
-        // Calculate decay rate based on perishability and storage
-        const baseDecay = 1.0; // Standard 1 day decay
-        const perishabilityFactor = this.perishability / 3; // 0.33 - 1.66
-        const storageFactor = this.isProperlyStored ? storageQuality : 0.5; // Poor storage = faster decay
+        this.dayAge += 1;
         
-        // Frozen items don't decay (or very slowly)
-        if (this.location === 'freezer') {
-            this.freshness -= 0.1; // Very slow decay even in freezer
+        const k = this.getSpoilageK();
+        this.qualityValue = Math.max(0, 100 * Math.exp(-k * this.dayAge));
+        
+        // Keep freshness in sync as approximate days remaining until Ncrit=40
+        // daysRemaining = (ln(qualityValue) - ln(40)) / k  if quality > 40, else 0
+        if (this.qualityValue > 40) {
+            this.freshness = Math.max(0, (Math.log(this.qualityValue) - Math.log(40)) / k);
         } else {
-            const decayRate = baseDecay * perishabilityFactor * (2.0 - storageFactor);
-            this.freshness -= decayRate;
+            this.freshness = 0;
         }
         
         return {
             id: this.id,
             name: this.name,
+            qualityValue: this.qualityValue,
             freshness: this.freshness,
             status: this.getStatus()
         };
     }
     
     /**
-     * Get freshness status
+     * Get freshness status based on exponential quality value (Ncrit = 40)
+     * Thresholds: fresh > 70, aging 50-70, expiring 40-50, spoiled <= 40
      * @returns {string} Status: 'fresh', 'aging', 'expiring', 'spoiled'
      */
     getStatus() {
-        if (this.freshness <= 0) return 'spoiled';
-        if (this.freshness <= 1) return 'expiring';
-        if (this.freshness <= 2) return 'aging';
+        if (this.qualityValue <= 40) return 'spoiled';
+        if (this.qualityValue <= 50) return 'expiring';
+        if (this.qualityValue <= 70) return 'aging';
         return 'fresh';
     }
     
     /**
-     * Get freshness percentage (for visual indicators)
-     * @returns {number} Percentage (0-100)
+     * Get food quality as a percentage (0-100), directly from N(t)
+     * @returns {number} qualityValue (0-100)
      */
     getFreshnessPercentage() {
-        return Math.max(0, Math.min(100, (this.freshness / this.maxFreshness) * 100));
+        return Math.max(0, Math.min(100, this.qualityValue));
     }
     
     /**
@@ -165,52 +191,52 @@ class FoodItem {
     }
     
     /**
-     * Check if item is spoiled
+     * Check if item is spoiled (quality below Ncrit = 40)
      * @returns {boolean} True if spoiled
      */
     isSpoiled() {
-        return this.freshness <= 0;
+        return this.qualityValue <= 40;
     }
     
     /**
-     * Check if item is expiring soon (1 day or less)
+     * Check if item is expiring soon (quality in 40-60 danger zone)
      * @returns {boolean} True if expiring soon
      */
     isExpiringSoon() {
-        return this.freshness > 0 && this.freshness <= 1;
+        return this.qualityValue > 40 && this.qualityValue <= 60;
     }
     
     /**
-     * Calculate spoilage probability (for stochastic model)
+     * Calculate spoilage probability based on quality value N(t).
+     * Items near Ncrit=40 have high probability; well above it have low probability.
      * @param {number} storageQuality - Storage quality (0-1)
      * @returns {number} Probability of spoiling (0-1)
      */
     getSpoilageProbability(storageQuality = 0.7) {
-        // Base probability from freshness
-        let probability = 0;
+        let probability;
         
-        if (this.freshness <= 0) {
-            probability = 1.0; // Already spoiled
-        } else if (this.freshness <= 1) {
-            probability = 0.6; // Very high risk
-        } else if (this.freshness <= 2) {
-            probability = 0.3; // Moderate risk
-        } else if (this.freshness <= 3) {
-            probability = 0.1; // Low risk
+        if (this.qualityValue <= 40) {
+            probability = 1.0;        // Already at/below Ncrit — definitely waste
+        } else if (this.qualityValue <= 50) {
+            probability = 0.45;       // Just above threshold — very high risk
+        } else if (this.qualityValue <= 60) {
+            probability = 0.20;       // Approaching threshold — moderate risk
+        } else if (this.qualityValue <= 70) {
+            probability = 0.08;       // Aging but manageable
         } else {
-            probability = 0.05; // Minimal risk
+            probability = 0.02;       // Fresh — minimal risk
         }
         
-        // Modify by storage quality
+        // Storage quality modifier (properly stored = reduced risk)
         if (!this.isProperlyStored) {
-            probability *= 1.5; // Poor storage increases risk
+            probability *= 1.5;
         } else {
-            probability *= (2.0 - storageQuality); // Good storage reduces risk
+            probability *= (2.0 - storageQuality);
         }
         
-        // Frozen items have very low spoilage risk
+        // Freezer dramatically slows spoilage
         if (this.location === 'freezer') {
-            probability *= 0.1;
+            probability *= 0.05;
         }
         
         return Math.min(probability, 1.0);
@@ -246,16 +272,12 @@ class FoodItem {
     moveToLocation(newLocation) {
         const oldLocation = this.location;
         this.location = newLocation;
-        
-        // Freezing extends freshness significantly
+        // Storage location change affects the k multiplier on the NEXT updateFreshness call.
+        // No manual freshness adjustment needed — the exponential model handles it automatically.
         if (newLocation === 'freezer' && oldLocation !== 'freezer') {
-            this.freshness += 30; // Add 30 days when frozen
-            console.log(`❄️ ${this.name} frozen - freshness extended`);
-        }
-        
-        // Moving from freezer to thaw
-        if (oldLocation === 'freezer' && newLocation !== 'freezer') {
-            console.log(`🔥 ${this.name} thawed - use soon!`);
+            console.log(`❄️ ${this.name} moved to freezer — decay rate reduced 10x`);
+        } else if (oldLocation === 'freezer' && newLocation !== 'freezer') {
+            console.log(`🔥 ${this.name} thawed — decay rate restored, use soon!`);
         }
     }
     
@@ -289,7 +311,9 @@ class FoodItem {
             price: `$${this.price.toFixed(2)}`,
             status: this.getStatus(),
             freshness: `${Math.max(0, this.freshness).toFixed(1)} days`,
+            qualityValue: Math.round(this.qualityValue),
             freshnessPercent: this.getFreshnessPercentage(),
+            spoilageK: this.getSpoilageK().toFixed(3),
             location: this.location,
             properlyStored: this.isInCorrectLocation(),
             dayPurchased: this.dayPurchased,
@@ -357,18 +381,25 @@ class FoodItem {
      * @returns {FoodItem} New instance with same properties
      */
     clone() {
-        return new FoodItem({
+        const c = new FoodItem({
             name: this.name,
             category: this.category,
             price: this.price,
             daysUntilSpoilage: this.daysUntilSpoilage,
             quantity: this.quantity,
+            originalQuantity: this.originalQuantity,
             perishability: this.perishability,
             location: this.location,
+            isProperlyStored: this.isProperlyStored,
             dayPurchased: this.dayPurchased,
+            dayAge: this.dayAge,
+            qualityValue: this.qualityValue,
+            freshness: this.freshness,
             spriteKey: this.spriteKey,
             color: this.color
         });
+        c.id = this.id;
+        return c;
     }
     
     /**
@@ -384,6 +415,8 @@ class FoodItem {
             daysUntilSpoilage: this.daysUntilSpoilage,
             maxFreshness: this.maxFreshness,
             freshness: this.freshness,
+            dayAge: this.dayAge,
+            qualityValue: this.qualityValue,
             quantity: this.quantity,
             originalQuantity: this.originalQuantity,
             perishability: this.perishability,
@@ -397,16 +430,19 @@ class FoodItem {
     }
     
     /**
-     * Create FoodItem from JSON
+     * Create FoodItem from JSON (restores exponential decay state)
      * @param {Object} json - JSON object
      * @returns {FoodItem} Reconstructed food item
      */
     static fromJSON(json) {
         const item = new FoodItem(json);
         item.id = json.id;
-        item.freshness = json.freshness;
+        item.dayAge = json.dayAge || 0;
+        item.qualityValue = json.qualityValue !== undefined ? json.qualityValue : 100;
+        item.freshness = json.freshness !== undefined ? json.freshness : item.daysUntilSpoilage;
         item.quantity = json.quantity;
-        item.isProperlyStored = json.isProperlyStored;
+        item.originalQuantity = json.originalQuantity || json.quantity;
+        item.isProperlyStored = json.isProperlyStored !== undefined ? json.isProperlyStored : true;
         return item;
     }
     
@@ -417,7 +453,7 @@ class FoodItem {
      * @returns {number} Comparison result
      */
     static compareByFreshness(a, b) {
-        return a.freshness - b.freshness; // Ascending (least fresh first)
+        return a.qualityValue - b.qualityValue; // Ascending (lowest quality first = soonest to spoil)
     }
     
     /**

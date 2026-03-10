@@ -1,46 +1,53 @@
-$root = "C:\Users\maiaa\Documents\Food Waste Code"
+$port = 8080
+$root = $PSScriptRoot
 $listener = [System.Net.HttpListener]::new()
-$listener.Prefixes.Add("http://localhost:4173/")
+$listener.Prefixes.Add("http://localhost:$port/")
 $listener.Start()
+Write-Host "Game running at: http://localhost:$port" -ForegroundColor Green
+Write-Host "Press Ctrl+C to stop." -ForegroundColor Yellow
 
-Write-Output "Serving http://localhost:4173"
+$mimeTypes = @{
+    '.html' = 'text/html'
+    '.js'   = 'application/javascript'
+    '.css'  = 'text/css'
+    '.json' = 'application/json'
+    '.png'  = 'image/png'
+    '.jpg'  = 'image/jpeg'
+    '.gif'  = 'image/gif'
+    '.svg'  = 'image/svg+xml'
+    '.ico'  = 'image/x-icon'
+    '.pdf'  = 'application/pdf'
+    '.docx' = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+}
 
 while ($listener.IsListening) {
-    $ctx = $listener.GetContext()
-    $reqPath = [System.Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath.TrimStart('/'))
-    if ([string]::IsNullOrWhiteSpace($reqPath)) {
-        $reqPath = "index.html"
-    }
+    try {
+        $ctx  = $listener.GetContext()
+        $req  = $ctx.Request
+        $res  = $ctx.Response
 
-    $filePath = Join-Path $root $reqPath
-    if ((Test-Path $filePath) -and (Get-Item $filePath).PSIsContainer) {
-        $filePath = Join-Path $filePath "index.html"
-    }
+        $localPath = $req.Url.LocalPath.TrimStart('/').Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+        $filePath  = Join-Path $root $localPath
 
-    if (Test-Path $filePath) {
-        $bytes = [System.IO.File]::ReadAllBytes($filePath)
-        $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
-        switch ($ext) {
-            ".html" { $type = "text/html" }
-            ".js" { $type = "application/javascript" }
-            ".css" { $type = "text/css" }
-            ".json" { $type = "application/json" }
-            ".png" { $type = "image/png" }
-            ".jpg" { $type = "image/jpeg" }
-            ".jpeg" { $type = "image/jpeg" }
-            ".gif" { $type = "image/gif" }
-            ".svg" { $type = "image/svg+xml" }
-            default { $type = "application/octet-stream" }
+        if ((Test-Path $filePath -PathType Container) -or $localPath -eq '') {
+            $filePath = Join-Path $root 'index.html'
         }
 
-        $ctx.Response.StatusCode = 200
-        $ctx.Response.ContentType = $type
-        $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
-    } else {
-        $msg = [System.Text.Encoding]::UTF8.GetBytes("Not Found")
-        $ctx.Response.StatusCode = 404
-        $ctx.Response.OutputStream.Write($msg, 0, $msg.Length)
+        if (Test-Path $filePath -PathType Leaf) {
+            $ext  = [System.IO.Path]::GetExtension($filePath).ToLower()
+            $mime = if ($mimeTypes.ContainsKey($ext)) { $mimeTypes[$ext] } else { 'application/octet-stream' }
+            $bytes = [System.IO.File]::ReadAllBytes($filePath)
+            $res.ContentType     = $mime
+            $res.ContentLength64 = $bytes.Length
+            $res.OutputStream.Write($bytes, 0, $bytes.Length)
+        } else {
+            $res.StatusCode = 404
+            $msg = [System.Text.Encoding]::UTF8.GetBytes("404 Not Found: $localPath")
+            $res.ContentLength64 = $msg.Length
+            $res.OutputStream.Write($msg, 0, $msg.Length)
+        }
+        $res.OutputStream.Close()
+    } catch {
+        # Listener stopped
     }
-
-    $ctx.Response.Close()
 }

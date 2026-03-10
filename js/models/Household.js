@@ -61,6 +61,18 @@ class Household {
             avoidedImpulseTrips: 0
         };
         
+        // Mass balance tracking: Fp (purchased) and Fc (consumed) in kg
+        // Conservation of mass: Fp - Fc - Fw = dFs/dt
+        this.totalFoodPurchasedKg = config.totalFoodPurchasedKg || 0;
+        this.totalFoodConsumedKg  = config.totalFoodConsumedKg  || 0;
+        
+        // Weekly counters reset each week for the mass balance display
+        this.weeklyFoodPurchasedKg = config.weeklyFoodPurchasedKg || 0;
+        this.weeklyFoodConsumedKg  = config.weeklyFoodConsumedKg  || 0;
+        this.weeklyFoodWastedKg    = config.weeklyFoodWastedKg    || 0;
+        // Snapshot of last week's mass balance for the end-of-week display
+        this.lastWeekMassBalance   = config.lastWeekMassBalance   || null;
+        
         console.log(`🏠 Household created: ${this.familySize} people, ${this.income} income, ${this.storeDistance} from store`);
     }
     
@@ -164,9 +176,51 @@ class Household {
      * Handle new week transition
      */
     onNewWeek() {
+        // Snapshot weekly mass balance before resetting
+        const storedKg = this.weeklyFoodPurchasedKg - this.weeklyFoodConsumedKg - this.weeklyFoodWastedKg;
+        this.lastWeekMassBalance = {
+            purchased: this.weeklyFoodPurchasedKg,
+            consumed:  this.weeklyFoodConsumedKg,
+            wasted:    this.weeklyFoodWastedKg,
+            stored:    storedKg  // dFs/dt: positive means inventory growing
+        };
+        // Reset weekly counters
+        this.weeklyFoodPurchasedKg = 0;
+        this.weeklyFoodConsumedKg  = 0;
+        this.weeklyFoodWastedKg    = 0;
         // Replenish weekly budget
         this.budget = this.calculateInitialBudget();
         console.log(`💰 New week! Budget replenished: $${this.budget.toFixed(2)}`);
+    }
+    
+    /**
+     * Record food purchased (kg) — called by ShoppingMinigame at checkout.
+     * Contributes to Fp in the mass balance equation Fp - Fc - Fw = dFs/dt.
+     * @param {number} kg - Weight in kg
+     */
+    addPurchasedKg(kg) {
+        this.totalFoodPurchasedKg  += kg;
+        this.weeklyFoodPurchasedKg += kg;
+    }
+    
+    /**
+     * Record food consumed (kg) — called by StochasticModel and CookingMinigame.
+     * Contributes to Fc in the mass balance equation.
+     * @param {number} kg - Weight in kg
+     */
+    addConsumedKg(kg) {
+        this.totalFoodConsumedKg  += kg;
+        this.weeklyFoodConsumedKg += kg;
+    }
+    
+    /**
+     * Household efficiency ratio E = Fc / Fp (paper formula).
+     * 1.0 = 100% of purchased food consumed; closer to 0 = more waste.
+     * @returns {number} Ratio 0-1
+     */
+    getEfficiencyRatio() {
+        if (this.totalFoodPurchasedKg <= 0) return 0;
+        return Math.min(1, this.totalFoodConsumedKg / this.totalFoodPurchasedKg);
     }
     
     /**
@@ -195,6 +249,10 @@ class Household {
     addWaste(weight, value, reason = 'unknown') {
         this.totalWaste += weight;
         this.totalWasteValue += value;
+        // Track weekly wasted kg (weight is in lbs, convert: 1 lb ≈ 0.4536 kg)
+        if (reason !== 'inedible_parts') {
+            this.weeklyFoodWastedKg += weight * 0.4536;
+        }
         
         if (reason === 'inedible_parts') {
             this.inedibleWasteWeight += weight;
@@ -257,20 +315,38 @@ class Household {
      * @returns {Object}
      */
     getSessionInsights() {
-        const score = Math.round(Math.max(0, this.hiddenScore));
+        // ── Weighted Score Formula (from paper): Score = w1*Pm + w2*Ps + w3*Pc + w4*E ──
+        // w1=0.30 (meal planning), w2=0.25 (storage), w3=0.25 (cooking), w4=0.20 (efficiency)
+
+        const totalTrips = Math.max(1, this.insightCounters.plannedShoppingTrips + this.insightCounters.unplannedShoppingTrips);
+        const plannedRatio  = this.insightCounters.plannedShoppingTrips / totalTrips;
+        const mealPlanRatio = Math.min(1, this.mealPlan.length / (this.sessionDayLimit * 3));
+        const Pm = Math.round((plannedRatio * 50 + mealPlanRatio * 50));   // 0-100
+
+        const totalLeftover = Math.max(1, this.insightCounters.goodLeftoverStorage + this.insightCounters.poorLeftoverStorage);
+        const storageRatio  = this.insightCounters.goodLeftoverStorage / totalLeftover;
+        const Ps = Math.round((storageRatio * 50 + this.storageQuality * 50));  // 0-100
+
+        const targetMeals = this.sessionDayLimit * 2; // 2 cooked meals per day target
+        const Pc = Math.round(Math.min(100, (this.mealsCompleted / targetMeals) * 100));  // 0-100
+
+        const E = Math.round(this.getEfficiencyRatio() * 100);  // 0-100
+
+        const score = Math.round(0.30 * Pm + 0.25 * Ps + 0.25 * Pc + 0.20 * E);
+
         let tier = 'Learning';
-        if (score >= 120) tier = 'Food Saver Expert';
-        else if (score >= 80) tier = 'Smart Planner';
-        else if (score >= 50) tier = 'Waste Reducer';
+        if (score >= 80) tier = 'Food Saver Expert';
+        else if (score >= 65) tier = 'Smart Planner';
+        else if (score >= 45) tier = 'Waste Reducer';
         
         const insights = [];
-        if (this.insightCounters.plannedShoppingTrips >= this.insightCounters.unplannedShoppingTrips) {
+        if (plannedRatio >= 0.5) {
             insights.push('You usually shopped with a plan, which reduces overbuying.');
         } else {
             insights.push('You often shopped without a plan. Try planning recipes before shopping trips.');
         }
         
-        if (this.insightCounters.goodLeftoverStorage >= this.insightCounters.poorLeftoverStorage) {
+        if (storageRatio >= 0.5) {
             insights.push('Your leftover storage choices helped keep food usable longer.');
         } else {
             insights.push('Leftover storage choices caused faster spoilage in several meals.');
@@ -284,9 +360,20 @@ class Household {
             insights.push('You controlled impulse buys on multiple shopping trips.');
         }
         
+        const effPct = (this.getEfficiencyRatio() * 100).toFixed(0);
+        if (this.getEfficiencyRatio() >= 0.75) {
+            insights.push(`Great efficiency! ${effPct}% of food you purchased was consumed.`);
+        } else {
+            insights.push(`Only ${effPct}% of purchased food was consumed. Try buying less at a time.`);
+        }
+        
         return {
             score: score,
             tier: tier,
+            scoreBreakdown: { Pm, Ps, Pc, E },
+            efficiencyRatio: this.getEfficiencyRatio(),
+            totalFoodPurchasedKg: this.totalFoodPurchasedKg,
+            totalFoodConsumedKg:  this.totalFoodConsumedKg,
             totalWaste: this.totalWaste,
             totalWasteValue: this.totalWasteValue,
             inedibleWasteWeight: this.inedibleWasteWeight,
@@ -599,7 +686,15 @@ class Household {
             decisionHistory: this.decisionHistory,
             sessionDayLimit: this.sessionDayLimit,
             sessionCompleted: this.sessionCompleted,
-            insightCounters: this.insightCounters
+            insightCounters: this.insightCounters,
+            
+            // Mass balance (Fp, Fc)
+            totalFoodPurchasedKg:  this.totalFoodPurchasedKg,
+            totalFoodConsumedKg:   this.totalFoodConsumedKg,
+            weeklyFoodPurchasedKg: this.weeklyFoodPurchasedKg,
+            weeklyFoodConsumedKg:  this.weeklyFoodConsumedKg,
+            weeklyFoodWastedKg:    this.weeklyFoodWastedKg,
+            lastWeekMassBalance:   this.lastWeekMassBalance
         };
         
         localStorage.setItem('foodWasteSimulator_household', JSON.stringify(saveData));
@@ -642,6 +737,12 @@ class Household {
             household.sessionDayLimit = data.sessionDayLimit || 14;
             household.sessionCompleted = !!data.sessionCompleted;
             household.insightCounters = data.insightCounters || household.insightCounters;
+            household.totalFoodPurchasedKg  = data.totalFoodPurchasedKg  || 0;
+            household.totalFoodConsumedKg   = data.totalFoodConsumedKg   || 0;
+            household.weeklyFoodPurchasedKg = data.weeklyFoodPurchasedKg || 0;
+            household.weeklyFoodConsumedKg  = data.weeklyFoodConsumedKg  || 0;
+            household.weeklyFoodWastedKg    = data.weeklyFoodWastedKg    || 0;
+            household.lastWeekMassBalance   = data.lastWeekMassBalance   || null;
             
             console.log('💾 Household loaded successfully');
             return household;
