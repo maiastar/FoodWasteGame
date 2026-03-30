@@ -74,7 +74,7 @@ class HydraGuide {
         if (this.isVisible) return;
 
         this.isVisible = true;
-        const width = this.scene.cameras.main.width;
+        const width  = this.scene.cameras.main.width;
         const height = this.scene.cameras.main.height;
 
         this.container = this.scene.add.container(0, 0);
@@ -85,11 +85,11 @@ class HydraGuide {
         overlay.setOrigin(0, 0);
         this.container.add(overlay);
 
-        // Card dimensions
+        // Card centered on screen
         const cardW = 520;
-        const cardH = 280;
-        const cx = width / 2;
-        const cy = height / 2;
+        const cardH = 290;
+        const cx    = width  / 2;
+        const cy    = height / 2;
 
         // Shadow
         const shadow = this.scene.add.rectangle(cx + 5, cy + 5, cardW, cardH, 0x000000, 0.25);
@@ -107,14 +107,13 @@ class HydraGuide {
         });
         this.container.add(card);
 
-        // Icon strip at top
+        // Header icon + label
         const icons = { tutorial: '👋', decision: '💡', feedback: '✅' };
         const icon = this.scene.add.text(cx - cardW / 2 + 28, cy - cardH / 2 + 22, icons[type] || '💡', {
             fontSize: '36px'
         }).setOrigin(0, 0);
         this.container.add(icon);
 
-        // Header label
         const headers = {
             tutorial: 'Welcome!',
             decision: 'Before you go...',
@@ -146,12 +145,15 @@ class HydraGuide {
 
         // Continue button
         const btnLabel = type === 'tutorial' ? 'Got It!' : (type === 'decision' ? "Let's Go!" : 'Continue');
-        const btnBg = this.scene.add.rectangle(cx, cy + cardH / 2 - 36, 180, 46, 0xF9A825);
+        const btnX = cx;
+        const btnY = cy + cardH / 2 - 36;
+
+        const btnBg = this.scene.add.rectangle(btnX, btnY, 180, 46, 0xF9A825);
         btnBg.setStrokeStyle(3, 0xffffff);
         btnBg.setInteractive({ useHandCursor: true });
         this.container.add(btnBg);
 
-        const btnText = this.scene.add.text(cx, cy + cardH / 2 - 36, btnLabel, {
+        const btnText = this.scene.add.text(btnX, btnY, btnLabel, {
             fontSize: '20px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',
@@ -171,8 +173,22 @@ class HydraGuide {
         });
 
         btnBg.on('pointerover', () => btnBg.setFillStyle(0xFFA000));
-        btnBg.on('pointerout', () => btnBg.setFillStyle(0xF9A825));
+        btnBg.on('pointerout',  () => btnBg.setFillStyle(0xF9A825));
         btnBg.on('pointerdown', () => this.hide());
+
+        // Hydra sprite — added LAST so it always renders in front of the card.
+        // Positioned to the left of the card, vertically centred.
+        // Transparent PNG so no blend mode trick needed.
+        // postFX saturation boost makes the colours more vivid.
+        if (this.scene.textures.exists('hydraGuide')) {
+            const spriteX = cx - cardW / 2 - 150;
+            const sprite  = this.scene.add.image(spriteX, cy, 'hydraGuide');
+            sprite.setDisplaySize(320, 320);
+            if (sprite.postFX) {
+                sprite.postFX.addColorMatrix().saturate(1);
+            }
+            this.container.add(sprite);
+        }
     }
 
     /**

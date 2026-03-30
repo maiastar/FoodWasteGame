@@ -27,7 +27,7 @@ class BootScene extends Phaser.Scene {
         this.load.json('hydraDialogue', 'assets/data/hydra-dialogue.json');
         
         // Load hydra guide sprite
-        this.load.image('hydraGuide', 'assets/sprites/hydra-guide.png');
+        this.load.image('hydraGuide', 'assets/sprites/Hydra Sprite.png');
         
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');
