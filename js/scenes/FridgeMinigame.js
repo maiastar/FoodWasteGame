@@ -73,6 +73,9 @@ class FridgeMinigame extends Phaser.Scene {
         // Initially show fridge items only
         this.freezerItemGroup.setVisible(false);
         this.pantryItemGroup.setVisible(false);
+
+        // Restore any zone placements from a previous visit
+        this.restoreZonePlacements();
         
         // Progress tracker (uses this.itemContainers which now holds all tabs)
         this.createProgressTracker();
@@ -634,6 +637,7 @@ class FridgeMinigame extends Phaser.Scene {
             }
         }
         foodItem.moveToLocation(targetLocation);
+        foodItem.zoneName = zoneData.name;   // persist specific shelf
         
         if (isCorrect) {
             console.log(`✅ Correctly placed ${foodItem.name} in ${zoneData.name} (${targetLocation})`);
@@ -667,7 +671,42 @@ class FridgeMinigame extends Phaser.Scene {
         
         this.updateProgressTracker();
     }
-    
+
+    /**
+     * Silently restore zone placements for items that were already organized in a previous visit.
+     * Called once during create(), after all item groups and zone groups are built.
+     */
+    restoreZonePlacements() {
+        const allZones = [
+            ...this.fridgeStorageZones,
+            ...this.freezerStorageZones,
+            ...this.pantryStorageZones,
+        ];
+
+        this.itemContainers.forEach(container => {
+            const foodItem = container.getData('foodItem');
+            if (!foodItem || !foodItem.zoneName) return;
+
+            const zone = allZones.find(z => z.getData('zoneData')?.name === foodItem.zoneName);
+            if (!zone) return;
+
+            container.setVisible(false);
+            container.setData('placed', true);
+            container.setData('zone', foodItem.zoneName);
+
+            const currentCount = zone.getData('itemsInZone') || 0;
+            zone.setData('itemsInZone', currentCount + 1);
+            const capacityText = zone.getData('capacityText');
+            if (capacityText) {
+                const n = currentCount + 1;
+                capacityText.setText(`${n} item${n > 1 ? 's' : ''}`);
+                capacityText.setColor('#333333');
+            }
+        });
+
+        this.updateProgressTracker();
+    }
+
     /**
      * Create animated progress tracker at top of items area
      */

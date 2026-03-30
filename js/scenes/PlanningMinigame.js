@@ -20,7 +20,18 @@ class PlanningMinigame extends Phaser.Scene {
         
         this.household = gameState.household;
         this.inventory = gameState.inventory;
+
+        // Prune expired meal plan entries (days before today)
+        this.household.mealPlan = this.household.mealPlan.filter(
+            meal => meal.day >= this.household.day
+        );
+
+        // Rebuild local plannedMeals map from remaining household plan
         this.plannedMeals = {};
+        this.household.mealPlan.forEach(meal => {
+            const capitalType = meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1);
+            this.plannedMeals[`${meal.day}_${capitalType}`] = meal.recipeId;
+        });
         
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
@@ -39,6 +50,7 @@ class PlanningMinigame extends Phaser.Scene {
         
         // Create calendar grid
         this.createCalendar();
+        this.restorePlannedMealVisuals();
         
         // Create recipe library
         this.createRecipeLibrary();
@@ -110,6 +122,7 @@ class PlanningMinigame extends Phaser.Scene {
      * Create calendar grid (7 days × 3 meals)
      */
     createCalendar() {
+        this.calendarCells = {};
         const calendarX = 30;
         const calendarY = 90;
         const calendarWidth = 800;
@@ -159,7 +172,8 @@ class PlanningMinigame extends Phaser.Scene {
         // Draw calendar cells
         days.forEach((day, dayIndex) => {
             meals.forEach((meal, mealIndex) => {
-                this.createCalendarCell(
+                const cellKey = `${dayIndex + 1}_${meal}`;
+                this.calendarCells[cellKey] = this.createCalendarCell(
                     gridStartX + dayIndex * cellWidth,
                     gridStartY + mealIndex * cellHeight,
                     cellWidth,
@@ -629,6 +643,31 @@ class PlanningMinigame extends Phaser.Scene {
     }
     
     /**
+     * Silently restore visual state for all pre-populated planned meals
+     * Called on open, after createCalendar(), without animations
+     */
+    restorePlannedMealVisuals() {
+        Object.entries(this.plannedMeals).forEach(([key, recipeId]) => {
+            const cell = this.calendarCells[key];
+            const recipe = this.recipes.find(r => r.id === recipeId);
+            if (!cell || !recipe) return;
+
+            const slotText = cell.getData('slotText');
+            const bg = cell.getData('bg');
+
+            if (slotText) {
+                slotText.setText(recipe.icon);
+                slotText.setFontSize('32px');
+                slotText.setColor('#333333');
+            }
+            if (bg) {
+                bg.setFillStyle(0xF3E5F5);
+                bg.setStrokeStyle(3, 0x9C27B0);
+            }
+        });
+    }
+
+    /**
      * Create visual completeness indicator
      */
     createCompletenessIndicator() {
@@ -967,6 +1006,9 @@ class PlanningMinigame extends Phaser.Scene {
         
         // Update household
         this.household.modifyWasteAwareness(score.awarenessChange);
+        
+        // Write unique planned recipe IDs so ShoppingMinigame can auto-populate the list
+        this.household.presetRecipeIds = [...new Set(Object.values(this.plannedMeals))];
         
         // Save game
         gameState.save();

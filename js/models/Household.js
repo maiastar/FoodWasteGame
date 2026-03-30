@@ -30,6 +30,8 @@ class Household {
         this.totalSpent = 0; // dollars
         this.mealsCompleted = 0;
         this.shoppingTrips = 0;
+        this.lastShoppingDay = config.lastShoppingDay || 0;
+        this.lastFridgeDay   = config.lastFridgeDay   || 0;
         this.inedibleWasteWeight = 0;
         this.inedibleWasteValue = 0;
         
@@ -376,6 +378,7 @@ class Household {
             totalFoodConsumedKg:  this.totalFoodConsumedKg,
             totalWaste: this.totalWaste,
             totalWasteValue: this.totalWasteValue,
+            totalSpent: this.totalSpent,
             inedibleWasteWeight: this.inedibleWasteWeight,
             inedibleWasteValue: this.inedibleWasteValue,
             insights: insights,
@@ -452,6 +455,7 @@ class Household {
      */
     updateStorageQuality(quality) {
         this.storageQuality = Math.max(0, Math.min(1, quality));
+        this.lastFridgeDay = this.day;
         console.log(`📦 Storage quality updated: ${(this.storageQuality * 100).toFixed(0)}%`);
     }
     
@@ -624,6 +628,7 @@ class Household {
      */
     recordShopping(amountSpent, itemsPurchased) {
         this.shoppingTrips++;
+        this.lastShoppingDay = this.day;
         
         const today = this.dailyHistory[this.day - 1] || this.initializeDailyRecord();
         today.purchases = itemsPurchased;
@@ -675,6 +680,8 @@ class Household {
             totalSpent: this.totalSpent,
             mealsCompleted: this.mealsCompleted,
             shoppingTrips: this.shoppingTrips,
+            lastShoppingDay: this.lastShoppingDay,
+            lastFridgeDay:   this.lastFridgeDay,
             inedibleWasteWeight: this.inedibleWasteWeight,
             inedibleWasteValue: this.inedibleWasteValue,
             storageQuality: this.storageQuality,
@@ -727,6 +734,8 @@ class Household {
             household.totalSpent = data.totalSpent;
             household.mealsCompleted = data.mealsCompleted;
             household.shoppingTrips = data.shoppingTrips;
+            household.lastShoppingDay = data.lastShoppingDay || 0;
+            household.lastFridgeDay   = data.lastFridgeDay   || 0;
             household.inedibleWasteWeight = data.inedibleWasteWeight || 0;
             household.inedibleWasteValue = data.inedibleWasteValue || 0;
             household.storageQuality = data.storageQuality;

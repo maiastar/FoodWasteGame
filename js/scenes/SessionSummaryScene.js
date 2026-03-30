@@ -46,118 +46,187 @@ class SessionSummaryScene extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        // ── Score Breakdown Panel ──
-        // Formula: Score = 0.30*Pm + 0.25*Ps + 0.25*Pc + 0.20*E
         const bd = summary.scoreBreakdown || { Pm: 0, Ps: 0, Pc: 0, E: 0 };
-        const panelX = width / 2 - 370;
-        const panelY = 135;
-        const panelW = 740;
-        const panelH = 185;
-        
-        const scoreBox = this.add.rectangle(width / 2, panelY + panelH / 2, panelW, panelH, 0xffffff, 0.97);
+
+        // ── Two-column layout constants ──
+        const boxY   = 128;
+        const boxH   = 270;
+        const boxW   = 580;
+        const leftX  = 50;           // left edge of left box
+        const rightX = leftX + boxW + 20; // left edge of right box (gap = 20px)
+        const fullW  = boxW * 2 + 20;    // combined width for panels below
+
+        // ── LEFT BOX — Score Breakdown ──
+        const scoreBox = this.add.rectangle(leftX + boxW / 2, boxY + boxH / 2, boxW, boxH, 0xffffff, 0.97);
         scoreBox.setStrokeStyle(3, 0xA5D6A7);
-        
-        this.add.text(panelX + 14, panelY + 12, '📐 Score Breakdown  (w₁·Pm + w₂·Ps + w₃·Pc + w₄·E)', {
-            fontSize: '16px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#555555',
-            fontStyle: 'bold'
+
+        this.add.text(leftX + 14, boxY + 12, '📐 Score Breakdown', {
+            fontSize: '16px', fontFamily: 'Fredoka, Arial', color: '#555555', fontStyle: 'bold'
         }).setOrigin(0, 0);
-        
+
         const metrics = [
-            { label: 'Pm  Meal Planning', weight: 0.30, value: bd.Pm, color: 0x2196F3 },
-            { label: 'Ps  Storage',       weight: 0.25, value: bd.Ps, color: 0x9C27B0 },
-            { label: 'Pc  Cooking',       weight: 0.25, value: bd.Pc, color: 0xFF9800 },
-            { label: 'E   Efficiency',    weight: 0.20, value: bd.E,  color: 0x4CAF50 },
+            { label: 'Meal Planning', value: bd.Pm, color: 0x2196F3 },
+            { label: 'Storage',       value: bd.Ps, color: 0x9C27B0 },
+            { label: 'Cooking',       value: bd.Pc, color: 0xFF9800 },
+            { label: 'Efficiency',    value: bd.E,  color: 0x4CAF50 },
         ];
-        
-        const barAreaX = panelX + 180;
-        const barW = 360;
-        const rowH = 30;
-        const rowStartY = panelY + 46;
-        
+
+        const rowH      = 38;
+        const labelColW = 150;
+        const barX      = leftX + labelColW + 10;
+        const barW      = boxW - labelColW - 70; // leave room for score value
+        const rowStartY = boxY + 42;
+
         metrics.forEach((m, i) => {
             const ry = rowStartY + i * rowH;
-            this.add.text(panelX + 14, ry + 4, m.label, {
-                fontSize: '17px', fontFamily: 'Fredoka, Arial', color: '#333333'
-            }).setOrigin(0, 0);
-            
-            // Weight tag
-            this.add.text(panelX + 170, ry + 4, `w=${m.weight}`, {
-                fontSize: '13px', fontFamily: 'Fredoka, Arial', color: '#888888'
-            }).setOrigin(1, 0);
-            
-            // Bar background
-            this.add.rectangle(barAreaX, ry + 12, barW, 18, 0xEEEEEE).setOrigin(0, 0.5);
-            // Bar fill
+
+            this.add.text(leftX + 14, ry + 10, m.label, {
+                fontSize: '16px', fontFamily: 'Fredoka, Arial', color: '#333333', fontStyle: 'bold'
+            }).setOrigin(0, 0.5);
+
+            this.add.rectangle(barX, ry + rowH / 2, barW, 16, 0xEEEEEE).setOrigin(0, 0.5);
             const fillW = Math.max(4, (m.value / 100) * barW);
-            this.add.rectangle(barAreaX, ry + 12, fillW, 18, m.color).setOrigin(0, 0.5);
-            
-            // Score value
-            this.add.text(barAreaX + barW + 10, ry + 4, `${m.value}`, {
-                fontSize: '17px', fontFamily: 'Fredoka, Arial', color: '#333333', fontStyle: 'bold'
+            this.add.rectangle(barX, ry + rowH / 2, fillW, 16, m.color).setOrigin(0, 0.5);
+
+            this.add.text(barX + barW + 8, ry + 10, `${m.value}`, {
+                fontSize: '16px', fontFamily: 'Fredoka, Arial', color: '#333333', fontStyle: 'bold'
+            }).setOrigin(0, 0.5);
+        });
+
+        // Final score row
+        const scoreRowY = rowStartY + metrics.length * rowH + 8;
+        this.add.rectangle(leftX + boxW / 2, scoreRowY, boxW - 28, 2, 0xDDDDDD).setOrigin(0.5, 0);
+        this.add.text(leftX + 14, scoreRowY + 8, '🏆 Final Score', {
+            fontSize: '19px', fontFamily: 'Fredoka, Arial', color: '#2E7D32', fontStyle: 'bold'
+        }).setOrigin(0, 0);
+        this.add.text(barX, scoreRowY + 8, `${summary.score} / 100`, {
+            fontSize: '21px', fontFamily: 'Fredoka, Arial', color: '#2E7D32', fontStyle: 'bold'
+        }).setOrigin(0, 0);
+
+        // ── RIGHT BOX — What This Means ──
+        const rightBox = this.add.rectangle(rightX + boxW / 2, boxY + boxH / 2, boxW, boxH, 0xffffff, 0.97);
+        rightBox.setStrokeStyle(3, 0xA5D6A7);
+
+        this.add.text(rightX + 14, boxY + 12, '💬 What This Means', {
+            fontSize: '16px', fontFamily: 'Fredoka, Arial', color: '#555555', fontStyle: 'bold'
+        }).setOrigin(0, 0);
+
+        // Behavioral interpretation — specific to the player's actual score values
+        const behaviorData = [
+            {
+                label: 'Meal Planning',
+                color: '#2196F3',
+                text: bd.Pm >= 80
+                    ? `Your score of ${bd.Pm} shows you bought only what you needed — very little over-shopping.`
+                    : bd.Pm >= 60
+                    ? `Your score of ${bd.Pm} suggests you occasionally bought more than you used, causing some waste.`
+                    : `Your score of ${bd.Pm} indicates frequent over-shopping — much of what you bought went uneaten.`
+            },
+            {
+                label: 'Storage',
+                color: '#9C27B0',
+                text: bd.Ps >= 80
+                    ? `Your score of ${bd.Ps} shows food was stored correctly, keeping it fresh as long as possible.`
+                    : bd.Ps >= 60
+                    ? `Your score of ${bd.Ps} suggests some food was stored incorrectly, speeding up spoilage.`
+                    : `Your score of ${bd.Ps} shows food was often placed in the wrong spot, accelerating spoilage.`
+            },
+            {
+                label: 'Cooking',
+                color: '#FF9800',
+                text: bd.Pc >= 80
+                    ? `Your score of ${bd.Pc} shows you used expiring items first and cooked the right portions.`
+                    : bd.Pc >= 60
+                    ? `Your score of ${bd.Pc} suggests you sometimes missed chances to use older food before it expired.`
+                    : `Your score of ${bd.Pc} indicates expiring food was often skipped when cooking.`
+            },
+            {
+                label: 'Efficiency',
+                color: '#4CAF50',
+                text: bd.E >= 80
+                    ? `Your score of ${bd.E} means nearly all food you bought was eaten — excellent habits overall.`
+                    : bd.E >= 60
+                    ? `Your score of ${bd.E} means a noticeable share of purchased food went uneaten this session.`
+                    : `Your score of ${bd.E} means a large amount of food you bought was never consumed.`
+            },
+        ];
+
+        const bRowH     = 56; // taller rows to accommodate two lines of text
+        const bStartY   = boxY + 42;
+        const bTextW    = boxW - 28;
+
+        behaviorData.forEach((b, i) => {
+            const by = bStartY + i * bRowH;
+
+            // Coloured label
+            this.add.text(rightX + 14, by + 2, b.label, {
+                fontSize: '14px', fontFamily: 'Fredoka, Arial',
+                color: b.color, fontStyle: 'bold'
             }).setOrigin(0, 0);
-            
-            // Weighted contribution
-            const contrib = Math.round(m.weight * m.value);
-            this.add.text(barAreaX + barW + 50, ry + 4, `→ ${contrib}`, {
-                fontSize: '15px', fontFamily: 'Fredoka, Arial', color: '#888888'
+
+            // Behavioral interpretation text
+            this.add.text(rightX + 14, by + 20, b.text, {
+                fontSize: '14px', fontFamily: 'Fredoka, Arial',
+                color: '#333333', wordWrap: { width: bTextW }
             }).setOrigin(0, 0);
         });
-        
-        // Final score bar
-        const scoreBarY = rowStartY + metrics.length * rowH + 6;
-        this.add.rectangle(width / 2, scoreBarY, panelW - 30, 2, 0xDDDDDD).setOrigin(0.5, 0);
-        this.add.text(panelX + 14, scoreBarY + 6, `🏆 Final Score`, {
-            fontSize: '20px', fontFamily: 'Fredoka, Arial', color: '#2E7D32', fontStyle: 'bold'
-        }).setOrigin(0, 0);
-        this.add.text(barAreaX, scoreBarY + 6, `${summary.score} / 100`, {
-            fontSize: '22px', fontFamily: 'Fredoka, Arial', color: '#2E7D32', fontStyle: 'bold'
-        }).setOrigin(0, 0);
-        
-        // ── Waste Stats + Efficiency ──
-        const statsY = panelY + panelH + 16;
-        const statsH = 115;
-        const statsBox = this.add.rectangle(width / 2, statsY + statsH / 2, panelW, statsH, 0xffffff, 0.95);
+
+        // ── Waste Stats (full width, below both boxes) ──
+        const statsY = boxY + boxH + 12;
+        const statsH = 90;
+        const statsBox = this.add.rectangle(leftX + fullW / 2, statsY + statsH / 2, fullW, statsH, 0xffffff, 0.95);
         statsBox.setStrokeStyle(3, 0xA5D6A7);
-        
+
         const effPct = Math.round((summary.efficiencyRatio || 0) * 100);
-        const fp = (summary.totalFoodPurchasedKg || 0).toFixed(2);
-        const fc = (summary.totalFoodConsumedKg || 0).toFixed(2);
-        
         const statsLines = [
-            `⚡ Efficiency  E = Fc/Fp: ${fc} kg consumed / ${fp} kg purchased = ${effPct}%`,
-            `🗑️ Avoidable waste: ${summary.totalWaste.toFixed(2)} lbs  ($${summary.totalWasteValue.toFixed(2)})`,
-            `🍎 Inedible prep parts: ${summary.inedibleWasteWeight.toFixed(2)} lbs   |   ${household ? `👨‍👩‍👧 ${household.familySize} people, ages ${household.ageRange}` : ''}`,
+            `⚡ Efficiency: ${effPct}%   |   🗑️ Avoidable waste: ${summary.totalWaste.toFixed(2)} lbs  ($${summary.totalWasteValue.toFixed(2)})`,
+            `🍎 Inedible prep waste: ${summary.inedibleWasteWeight.toFixed(2)} lbs${household ? `   |   👨‍👩‍👧 ${household.familySize} people, ages ${household.ageRange}` : ''}`,
         ];
         statsLines.forEach((line, i) => {
-            this.add.text(width / 2, statsY + 16 + i * 32, line, {
-                fontSize: '20px',
-                fontFamily: 'Fredoka, Arial',
-                color: '#333333',
-                align: 'center',
-                wordWrap: { width: panelW - 20 }
+            this.add.text(leftX + fullW / 2, statsY + 16 + i * 32, line, {
+                fontSize: '18px', fontFamily: 'Fredoka, Arial', color: '#333333',
+                align: 'center', wordWrap: { width: fullW - 20 }
             }).setOrigin(0.5, 0);
         });
-        
-        // ── Insights ──
-        const insightsY = statsY + statsH + 14;
-        this.add.text(width / 2, insightsY, '📘 Personalized Insights', {
-            fontSize: '28px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#2E7D32',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        
-        summary.insights.slice(0, 4).forEach((insight, index) => {
-            this.add.text(width / 2, insightsY + 38 + index * 36, `• ${insight}`, {
-                fontSize: '19px',
-                fontFamily: 'Fredoka, Arial',
-                color: '#2f2f2f',
-                align: 'center',
-                wordWrap: { width: 950 }
-            }).setOrigin(0.5);
-        });
+
+        // ── Financial Waste Panel ──
+        const finY = statsY + statsH + 10;
+        const finH = 110;
+        const finBox = this.add.rectangle(leftX + fullW / 2, finY + finH / 2, fullW, finH, 0xffffff, 0.97);
+        finBox.setStrokeStyle(3, 0xA5D6A7);
+
+        const wasteDollars = summary.totalWasteValue || 0;
+        const totalSpent   = summary.totalSpent || 0;
+        const wastePct     = totalSpent > 0 ? Math.round((wasteDollars / totalSpent) * 100) : 0;
+        const usedDollars  = Math.max(0, totalSpent - wasteDollars);
+        const usedPct      = 100 - wastePct;
+
+        // Left column — dollar amount wasted
+        const colMid = leftX + fullW / 4;
+        this.add.text(colMid, finY + 18, '💸 Money Thrown Away', {
+            fontSize: '14px', fontFamily: 'Fredoka, Arial', color: '#888888', fontStyle: 'bold'
+        }).setOrigin(0.5, 0);
+        this.add.text(colMid, finY + 38, `$${wasteDollars.toFixed(2)}`, {
+            fontSize: '36px', fontFamily: 'Fredoka, Arial', color: '#E53935', fontStyle: 'bold'
+        }).setOrigin(0.5, 0);
+        this.add.text(colMid, finY + 82, 'in avoidable food waste', {
+            fontSize: '13px', fontFamily: 'Fredoka, Arial', color: '#AAAAAA', fontStyle: 'italic'
+        }).setOrigin(0.5, 0);
+
+        // Divider
+        this.add.rectangle(leftX + fullW / 2, finY + finH / 2, 2, finH - 24, 0xDDDDDD).setOrigin(0.5, 0.5);
+
+        // Right column — percentage breakdown
+        const colMid2 = leftX + (fullW * 3) / 4;
+        this.add.text(colMid2, finY + 18, `${wastePct}% of your grocery budget was wasted`, {
+            fontSize: '17px', fontFamily: 'Fredoka, Arial', color: '#E53935', fontStyle: 'bold'
+        }).setOrigin(0.5, 0);
+        this.add.text(colMid2, finY + 50, `${usedPct}% was used well`, {
+            fontSize: '17px', fontFamily: 'Fredoka, Arial', color: '#2E7D32', fontStyle: 'bold'
+        }).setOrigin(0.5, 0);
+        this.add.text(colMid2, finY + 76, `($${usedDollars.toFixed(2)} out of $${totalSpent.toFixed(2)} spent)`, {
+            fontSize: '14px', fontFamily: 'Fredoka, Arial', color: '#777777'
+        }).setOrigin(0.5, 0);
         
         // ── Restart Button ──
         const restartBtn = this.add.rectangle(width / 2, height - 48, 340, 60, 0x4CAF50);

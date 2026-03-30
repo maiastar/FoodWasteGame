@@ -76,7 +76,7 @@ class ManagementScene extends Phaser.Scene {
         const panelX = 30;
         const panelY = 100;
         const panelWidth = 380;
-        const panelHeight = 250;
+        const panelHeight = 175;
         
         // Modern panel with shadow
         const panelContainer = this.createModernPanel(panelX, panelY, panelWidth, panelHeight);
@@ -115,81 +115,14 @@ class ManagementScene extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0, 0);
         
-        // Waste Awareness Circular Gauge (same row as budget)
-        this.add.text(panelX + 210, panelY + 60, '📚 Awareness', {
-            fontSize: '14px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#666666',
-            fontStyle: 'bold'
-        }).setOrigin(0.5, 0);
-        
-        const awarenessGauge = this.createCircularGauge(
-            panelX + 210, panelY + 108,
-            28, stats.wasteAwareness, 100
-        );
-        
-        // Performance Grade Badge (same row as budget, far right)
-        const grade = this.household.getPerformanceGrade();
-        const gradeColors = {
-            'A+': 0xFFD700, 'A': 0xFFD700,
-            'B+': 0xC0C0C0, 'B': 0xC0C0C0,
-            'C+': 0xCD7F32, 'C': 0xCD7F32,
-            'D': 0xFF9800, 'F': 0xF44336
-        };
-        const gradeColor = gradeColors[grade] || 0x9E9E9E;
-        const shouldGlow = grade.startsWith('A');
-        
-        const gradeBadge = this.createBadge(
-            panelX + 345, panelY + 90,
-            '🎯', grade, gradeColor, 42, shouldGlow
-        );
-        
-        // Efficiency Ratio E = Fc / Fp
-        const effPct = Math.round(this.household.getEfficiencyRatio() * 100);
-        const effColor = effPct >= 75 ? '#4CAF50' : effPct >= 50 ? '#FF9800' : '#F44336';
-        this.add.text(panelX + 20, panelY + 148, '⚡ Efficiency', {
-            fontSize: '14px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#666666',
-            fontStyle: 'bold'
-        }).setOrigin(0, 0);
-        this.add.text(panelX + 20, panelY + 166, `${effPct}% consumed`, {
-            fontSize: '18px',
-            fontFamily: 'Fredoka, Arial',
-            color: effColor,
-            fontStyle: 'bold'
-        }).setOrigin(0, 0);
-        
-        // Total Waste with animated text
-        this.add.text(panelX + 20, panelY + 200, '🗑️ Total Waste', {
-            fontSize: '16px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#666666',
-            fontStyle: 'bold'
-        }).setOrigin(0, 0);
-        
-        this.createCountingText(panelX + 20, panelY + 220, 0, stats.totalWaste, '', ' lbs', {
-            fontSize: '20px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#F44336',
-            fontStyle: 'bold'
-        }).setOrigin(0, 0);
-        
-        // Waste Value
-        this.createCountingText(panelX + 140, panelY + 220, 0, stats.totalWasteValue, '$', '', {
-            fontSize: '16px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#999999'
-        }).setOrigin(0, 0);
-        
         // Streak Counter (if streak > 0)
         if (this.household.lowWasteStreak > 0) {
-            const streakBadge = this.createBadge(
-                panelX + 275, panelY + 90,
+            this.createBadge(
+                panelX + 275, panelY + 140,
                 '🔥', `${this.household.lowWasteStreak}`, 0xFF5722, 45, true
             );
             
-            this.add.text(panelX + 275, panelY + 120, 'Day Streak!', {
+            this.add.text(panelX + 275, panelY + 168, 'Day Streak!', {
                 fontSize: '12px',
                 fontFamily: 'Fredoka, Arial',
                 color: '#FF5722',
@@ -210,7 +143,7 @@ class ManagementScene extends Phaser.Scene {
             const ach = achievementData[achId];
             if (ach) {
                 this.createBadge(
-                    panelX + 240 + index * 50, panelY + 220,
+                    panelX + 240 + index * 50, panelY + 160,
                     ach.icon, '', ach.color, 35, false
                 );
             }
@@ -414,8 +347,8 @@ class ManagementScene extends Phaser.Scene {
             eventIndex++;
         }
         
-        // Shopping day? (IMPORTANT)
-        if (this.household.isShoppingDay()) {
+        // Shopping day? (IMPORTANT) — hide once the player has shopped today
+        if (this.household.isShoppingDay() && this.household.lastShoppingDay !== this.household.day) {
             const shopIcon = this.add.text(panelX + 20, eventsY + eventIndex * lineHeight + 10, '🛒', {
                 fontSize: '28px'
             }).setOrigin(0, 0);
@@ -440,21 +373,24 @@ class ManagementScene extends Phaser.Scene {
             eventIndex++;
         }
         
-        // Meal time (ROUTINE)
-        const cookIcon = this.add.text(panelX + 20, eventsY + eventIndex * lineHeight + 10, '🍳', {
-            fontSize: '28px'
-        }).setOrigin(0, 0);
+        // Meal time (ROUTINE) — hide once the player has cooked a meal today
+        const mealsToday = this.household.dailyHistory?.[this.household.day - 1]?.mealsCooked;
+        if (!mealsToday || mealsToday.length === 0) {
+            const cookIcon = this.add.text(panelX + 20, eventsY + eventIndex * lineHeight + 10, '🍳', {
+                fontSize: '28px'
+            }).setOrigin(0, 0);
+            
+            this.add.text(panelX + 60, eventsY + eventIndex * lineHeight + 10, 'Time to Cook!', {
+                fontSize: '20px',
+                fontFamily: 'Fredoka, Arial',
+                color: '#FF9800'
+            }).setOrigin(0, 0);
+            
+            eventIndex++;
+        }
         
-        this.add.text(panelX + 60, eventsY + eventIndex * lineHeight + 10, 'Time to Cook!', {
-            fontSize: '20px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#FF9800'
-        }).setOrigin(0, 0);
-        
-        eventIndex++;
-        
-        // Weekly organization reminder
-        if (this.household.day % 7 === 0) {
+        // Weekly organization reminder — hide once the player has organized the fridge today
+        if (this.household.day % 7 === 0 && this.household.lastFridgeDay !== this.household.day) {
             const fridgeIcon = this.add.text(panelX + 20, eventsY + eventIndex * lineHeight + 10, '📦', {
                 fontSize: '28px'
             }).setOrigin(0, 0);

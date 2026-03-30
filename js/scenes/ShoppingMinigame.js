@@ -45,17 +45,24 @@ class ShoppingMinigame extends Phaser.Scene {
         const recipeData = this.cache.json.get('recipes');
         this.recipeCatalog = recipeData && recipeData.recipes ? recipeData.recipes : [];
         
-        this.showPlanningPrompt(() => {
-            if (this.planRecipesThisTrip) {
-                this.showPresetRecipeSelector(() => {
-                    this.generateShoppingList();
-                    this.initializeShoppingInterface();
-                });
-            } else {
-                this.generateShoppingList();
-                this.initializeShoppingInterface();
-            }
-        });
+        // Auto-detect planned recipes from meal planning minigame
+        const plannedIds = this.household.presetRecipeIds || [];
+        if (plannedIds.length > 0) {
+            this.planRecipesThisTrip = true;
+            this.selectedPresetRecipes = plannedIds
+                .map(id => this.recipeCatalog.find(r => r.id === id))
+                .filter(Boolean);
+            this.household.recordDecision('shopping_planned', 8, {
+                recipesSelected: this.selectedPresetRecipes.length
+            });
+        } else {
+            this.planRecipesThisTrip = false;
+            this.household.recordDecision('shopping_unplanned', -2, {
+                reason: 'no_meal_plan_before_shopping'
+            });
+        }
+        this.generateShoppingList();
+        this.initializeShoppingInterface();
     }
     
     /**
@@ -86,182 +93,6 @@ class ShoppingMinigame extends Phaser.Scene {
                     listItems: this.shoppingList.length
                 });
             }
-        });
-    }
-    
-    /**
-     * Ask if player wants to plan recipes before shopping
-     */
-    showPlanningPrompt(onComplete) {
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
-        
-        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.55).setOrigin(0, 0).setDepth(2900);
-        overlay.setInteractive();
-        
-        const panel = this.add.rectangle(width / 2, height / 2, 760, 320, 0xffffff).setDepth(2901);
-        panel.setStrokeStyle(4, 0x4CAF50);
-        
-        const title = this.add.text(width / 2, height / 2 - 90, 'Plan recipes before shopping?', {
-            fontSize: '38px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#2E7D32',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(2902);
-        
-        const subtitle = this.add.text(width / 2, height / 2 - 40, 'This choice affects your shopping list.', {
-            fontSize: '22px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#555555'
-        }).setOrigin(0.5).setDepth(2902);
-        
-        const yesBtn = this.add.rectangle(width / 2 - 145, height / 2 + 60, 230, 58, 0x4CAF50).setDepth(2902);
-        yesBtn.setStrokeStyle(3, 0xffffff);
-        yesBtn.setInteractive({ useHandCursor: true });
-        const yesText = this.add.text(width / 2 - 145, height / 2 + 60, 'Yes, plan', {
-            fontSize: '26px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(2903);
-        
-        const noBtn = this.add.rectangle(width / 2 + 145, height / 2 + 60, 230, 58, 0x9E9E9E).setDepth(2902);
-        noBtn.setStrokeStyle(3, 0xffffff);
-        noBtn.setInteractive({ useHandCursor: true });
-        const noText = this.add.text(width / 2 + 145, height / 2 + 60, 'No, skip', {
-            fontSize: '26px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(2903);
-        
-        const cleanup = () => {
-            overlay.destroy();
-            panel.destroy();
-            title.destroy();
-            subtitle.destroy();
-            yesBtn.destroy();
-            yesText.destroy();
-            noBtn.destroy();
-            noText.destroy();
-        };
-        
-        yesBtn.on('pointerdown', () => {
-            this.planRecipesThisTrip = true;
-            this.household.weeklyRecipePlanning = true;
-            cleanup();
-            onComplete();
-        });
-        
-        noBtn.on('pointerdown', () => {
-            this.planRecipesThisTrip = false;
-            this.household.weeklyRecipePlanning = false;
-            this.household.recordDecision('shopping_unplanned', -2, { reason: 'player_skipped_planning_prompt' });
-            cleanup();
-            onComplete();
-        });
-    }
-    
-    /**
-     * Show preset recipes that shape shopping list
-     */
-    showPresetRecipeSelector(onComplete) {
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
-        
-        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0, 0).setDepth(3000);
-        overlay.setInteractive();
-        overlay.on('pointerdown', (_p, _x, _y, event) => { event.stopPropagation(); });
-        
-        const panel = this.add.rectangle(width / 2, height / 2, 860, 520, 0xffffff).setDepth(3001);
-        panel.setStrokeStyle(4, 0x4CAF50);
-        
-        const modalTitle = this.add.text(width / 2, height / 2 - 210, '🧾 Pick Preset Recipes for This Week', {
-            fontSize: '34px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#2E7D32',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(3002);
-        
-        const modalSubtitle = this.add.text(width / 2, height / 2 - 170, 'Choose up to 3 recipes. Your shopping list will adapt.', {
-            fontSize: '18px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#555555'
-        }).setOrigin(0.5).setDepth(3002);
-        
-        const recipes = this.selectRandomRecipes(this.recipeCatalog, 6);
-        const selectionText = this.add.text(width / 2, height / 2 + 145, 'Selected: 0/3', {
-            fontSize: '20px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#2E7D32',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(3002);
-        
-        const overlayObjects = [overlay, panel, modalTitle, modalSubtitle, selectionText];
-        
-        recipes.forEach((recipe, index) => {
-            const col = index % 2;
-            const row = Math.floor(index / 2);
-            const x = width / 2 - 200 + col * 400;
-            const y = height / 2 - 90 + row * 78;
-            
-            const card = this.add.rectangle(x, y, 360, 64, 0xF5F5F5).setDepth(3002);
-            card.setStrokeStyle(2, 0xCCCCCC);
-            card.setInteractive({ useHandCursor: true });
-            overlayObjects.push(card);
-            
-            const label = this.add.text(x, y, `${recipe.icon} ${recipe.name} (serves ${recipe.servings})`, {
-                fontSize: '18px',
-                fontFamily: 'Fredoka, Arial',
-                color: '#333333',
-                fontStyle: 'bold'
-            }).setOrigin(0.5).setDepth(3003);
-            overlayObjects.push(label);
-            
-            card.on('pointerdown', () => {
-                const alreadySelected = this.selectedPresetRecipes.some(r => r.id === recipe.id);
-                if (alreadySelected) {
-                    this.selectedPresetRecipes = this.selectedPresetRecipes.filter(r => r.id !== recipe.id);
-                    card.setFillStyle(0xF5F5F5);
-                    card.setStrokeStyle(2, 0xCCCCCC);
-                } else if (this.selectedPresetRecipes.length < 3) {
-                    this.selectedPresetRecipes.push(recipe);
-                    card.setFillStyle(0xE8F5E9);
-                    card.setStrokeStyle(3, 0x4CAF50);
-                }
-                selectionText.setText(`Selected: ${this.selectedPresetRecipes.length}/3`);
-            });
-        });
-        
-        const continueBtn = this.add.rectangle(width / 2, height / 2 + 210, 280, 56, 0x4CAF50).setDepth(3002);
-        continueBtn.setStrokeStyle(3, 0xffffff);
-        continueBtn.setInteractive({ useHandCursor: true });
-        overlayObjects.push(continueBtn);
-        
-        const continueLabel = this.add.text(width / 2, height / 2 + 210, 'Continue to Store', {
-            fontSize: '24px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(3003);
-        overlayObjects.push(continueLabel);
-        
-        let selectorDismissed = false;
-        continueBtn.on('pointerdown', () => {
-            if (selectorDismissed) return;
-            selectorDismissed = true;
-            const usingPlanning = this.selectedPresetRecipes.length > 0;
-            this.household.recordDecision(
-                usingPlanning ? 'shopping_planned' : 'shopping_unplanned',
-                usingPlanning ? 8 : -4,
-                { recipesSelected: this.selectedPresetRecipes.length }
-            );
-            this.household.presetRecipeIds = this.selectedPresetRecipes.map(r => r.id);
-            overlayObjects.forEach(obj => {
-                if (obj.disableInteractive) obj.disableInteractive();
-                obj.destroy();
-            });
-            onComplete();
         });
     }
     

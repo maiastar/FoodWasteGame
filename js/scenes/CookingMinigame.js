@@ -97,10 +97,15 @@ class CookingMinigame extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        // Show 3 random recipes
-        const availableRecipes = this.getAvailableRecipes();
-        let recipesToShow = this.selectRandomRecipes(availableRecipes, 3);
-        
+        // Prioritise recipes the player planned for today
+        let recipesToShow = this.getPlannedRecipesForToday();
+
+        if (recipesToShow.length === 0) {
+            // No planned meals for today — show what can be made from inventory
+            const availableRecipes = this.getAvailableRecipes();
+            recipesToShow = this.selectRandomRecipes(availableRecipes, 3);
+        }
+
         // Fallback: if no recipes available, show recipes that are "almost" makeable
         if (recipesToShow.length === 0) {
             console.log('⚠️ No perfect recipes available, showing best alternatives...');
@@ -124,6 +129,23 @@ class CookingMinigame extends Phaser.Scene {
         });
     }
     
+    /**
+     * Get recipes planned for today's meals in PlanningMinigame
+     * Returns up to 3 unique recipe objects, or empty array if none planned
+     */
+    getPlannedRecipesForToday() {
+        const todaysMeals = this.household.getMealsForDay(this.household.day);
+        const seen = new Set();
+        return todaysMeals
+            .map(meal => this.recipes.find(r => r.id === meal.recipeId))
+            .filter(recipe => {
+                if (!recipe || seen.has(recipe.id)) return false;
+                seen.add(recipe.id);
+                return true;
+            })
+            .slice(0, 3);
+    }
+
     /**
      * Get recipes that can be made with current inventory
      */

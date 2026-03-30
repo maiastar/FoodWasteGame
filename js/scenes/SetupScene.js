@@ -403,8 +403,7 @@ class SetupScene extends Phaser.Scene {
         });
         
         bg.on('pointerdown', () => {
-            // TODO: Go back to title screen when implemented
-            console.log('Back button pressed');
+            this.scene.start('TitleScene');
         });
     }
     

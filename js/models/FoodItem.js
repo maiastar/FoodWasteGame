@@ -34,6 +34,7 @@ class FoodItem {
         
         // Storage
         this.location = config.location || this.getDefaultLocation();
+        this.zoneName = config.zoneName || null;  // specific shelf, e.g. "Crisper Drawer"
         this.isProperlyStored = config.isProperlyStored !== undefined ? config.isProperlyStored : true;
         
         // Metadata
@@ -421,6 +422,7 @@ class FoodItem {
             originalQuantity: this.originalQuantity,
             perishability: this.perishability,
             location: this.location,
+            zoneName: this.zoneName,
             isProperlyStored: this.isProperlyStored,
             dayPurchased: this.dayPurchased,
             expirationDate: this.expirationDate,
@@ -443,6 +445,7 @@ class FoodItem {
         item.quantity = json.quantity;
         item.originalQuantity = json.originalQuantity || json.quantity;
         item.isProperlyStored = json.isProperlyStored !== undefined ? json.isProperlyStored : true;
+        item.zoneName = json.zoneName || null;
         return item;
     }
     

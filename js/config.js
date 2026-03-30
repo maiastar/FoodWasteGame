@@ -30,6 +30,7 @@ const gameConfig = {
     // Scene management (order matters for loading)
     scene: [
         BootScene,          // Asset loading and initialization
+        TitleScene,         // Landing / title screen
         SetupScene,         // Household configuration
         ManagementScene,    // Main hub
         GroceryTravelScene, // Loading transition between scenes

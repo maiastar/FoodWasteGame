@@ -57,8 +57,8 @@ class BootScene extends Phaser.Scene {
                 this.scene.start('ManagementScene');
             }
         } else {
-            console.log('🆕 No saved game - starting setup');
-            this.scene.start('SetupScene');
+            console.log('🆕 No saved game - going to title');
+            this.scene.start('TitleScene');
         }
     }
     
@@ -70,7 +70,7 @@ class BootScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         
         // Title
-        const title = this.add.text(width / 2, height / 2 - 100, '🍎 Food Waste Simulator', {
+        const title = this.add.text(width / 2, height / 2 - 100, '🍎 Food Smart Simulator', {
             fontSize: '48px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',
