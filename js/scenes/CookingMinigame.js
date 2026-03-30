@@ -118,6 +118,22 @@ class CookingMinigame extends Phaser.Scene {
             this.showNoRecipesAvailable();
             return;
         }
+
+        // Prepend "Reheat Leftovers" card if leftover food items are in inventory
+        const leftoverItems = this.getLeftoverFoodItems();
+        if (leftoverItems.length > 0) {
+            const totalServings = leftoverItems.reduce((sum, item) => sum + item.quantity, 0);
+            recipesToShow.unshift({
+                id: 'reheat_leftovers',
+                name: 'Reheat Leftovers',
+                icon: '🍱',
+                cookTime: 5,
+                servings: totalServings,
+                difficulty: 'Easy',
+                ingredients: [],
+                isLeftoverReheat: true
+            });
+        }
         
         // Display recipe cards
         const cardSpacing = 280;
@@ -149,6 +165,13 @@ class CookingMinigame extends Phaser.Scene {
     /**
      * Get recipes that can be made with current inventory
      */
+    /**
+     * Return unspoiled leftover FoodItems from inventory (category 'other')
+     */
+    getLeftoverFoodItems() {
+        return this.inventory.items.filter(item => item.category === 'other' && !item.isSpoiled());
+    }
+
     getAvailableRecipes() {
         console.log('🔍 Checking available recipes...');
         console.log('Current inventory:', this.inventory.items.map(i => `${i.name} (qty: ${i.quantity}, spoiled: ${i.isSpoiled()})`));
@@ -273,8 +296,11 @@ class CookingMinigame extends Phaser.Scene {
         // destroy(true) propagates to container children, removing their input registrations
         this.children.list.slice().forEach(obj => obj.destroy(true));
         
-        // Show cooking interface
-        this.showCookingInterface();
+        if (recipe.isLeftoverReheat) {
+            this.reheatLeftovers();
+        } else {
+            this.showCookingInterface();
+        }
     }
     
     /**
@@ -693,14 +719,10 @@ class CookingMinigame extends Phaser.Scene {
         this.household.recordMeal(this.selectedRecipe.id, servingsMade);
         this.household.modifyWasteAwareness(score.awarenessChange);
         
-        // Handle leftovers with player storage choice, then finalize flow
+        // Auto-store leftovers in fridge; player can organize them in the Fridge minigame
         if (servingsMade > this.household.familySize * 1.5) {
             const leftoverServings = servingsMade - this.household.familySize;
-            this.showLeftoverStorageChoice(leftoverServings, (storageChoice) => {
-                this.storeLeftovers(leftoverServings, storageChoice);
-                this.finalizeCookingFlow(score, servingsMade);
-            });
-            return;
+            this.storeLeftovers(leftoverServings, 'fridge');
         }
         
         this.finalizeCookingFlow(score, servingsMade);
@@ -713,7 +735,33 @@ class CookingMinigame extends Phaser.Scene {
         gameState.save();
         this.showCookingResults(score, servingsMade);
     }
-    
+
+    /**
+     * Consume leftover items from inventory and record as a cooked meal
+     */
+    reheatLeftovers() {
+        const leftoverItems = this.getLeftoverFoodItems();
+        const totalServings = leftoverItems.reduce((sum, item) => sum + item.quantity, 0);
+
+        // Consume leftover items from inventory
+        leftoverItems.forEach(item => this.inventory.removeItem(item.id));
+
+        // Record as a cooked meal and award awareness for using leftovers
+        this.household.recordMeal('reheat_leftovers', totalServings);
+        this.household.recordDecision('leftover_good_storage', 5, { reheated: true });
+
+        const score = {
+            score: 90,
+            awarenessChange: 6,
+            feedback: [
+                '✅ Great job using your leftovers!',
+                'Reheating leftovers is one of the best ways to reduce food waste.'
+            ]
+        };
+        this.household.modifyWasteAwareness(score.awarenessChange);
+        this.finalizeCookingFlow(score, totalServings);
+    }
+
     /**
      * Calculate cooking performance score
      */

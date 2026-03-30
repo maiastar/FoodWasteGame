@@ -29,6 +29,12 @@ class FridgeMinigame extends Phaser.Scene {
         this.fridgeItemGroup = null;
         this.freezerItemGroup = null;
         this.pantryItemGroup = null;
+
+        // Scroll state for the item panel
+        this.VISIBLE_COUNT = 6;
+        this.scrollIndexes = { fridge: 0, freezer: 0, pantry: 0 };
+        this.scrollUpBtn = null;
+        this.scrollDownBtn = null;
     }
     
     create() {
@@ -42,6 +48,7 @@ class FridgeMinigame extends Phaser.Scene {
         this.pantryStorageZones = [];
         this.tabButtons = {};
         this.activeTab = 'fridge';
+        this.scrollIndexes = { fridge: 0, freezer: 0, pantry: 0 };
         
         this.household = gameState.household;
         this.inventory = gameState.inventory;
@@ -79,6 +86,9 @@ class FridgeMinigame extends Phaser.Scene {
         
         // Progress tracker (uses this.itemContainers which now holds all tabs)
         this.createProgressTracker();
+
+        // Scroll buttons for the item panel
+        this.createScrollButtons();
         
         // Create timer
         this.createTimer();
@@ -217,8 +227,110 @@ class FridgeMinigame extends Phaser.Scene {
         });
         
         console.log(`🔄 Switched to ${tabName} tab`);
+
+        this.updateItemListLayout(tabName);
+    }
+
+    /**
+     * Reposition and show/hide item cards for the given tab according to the current
+     * scroll index, skipping any already-placed cards.
+     */
+    updateItemListLayout(tab) {
+        const group = tab === 'fridge'  ? this.fridgeItemGroup
+                    : tab === 'freezer' ? this.freezerItemGroup
+                                       : this.pantryItemGroup;
+        if (!group) return;
+
+        const ax = 800;
+        const itemStartY = 100 + 120; // ay + 120
+        const itemHeight = 70;
+        const scrollIndex = this.scrollIndexes[tab] || 0;
+        const VISIBLE_COUNT = this.VISIBLE_COUNT;
+
+        // Gather unplaced cards from this group, ordered by their listIndex
+        const children = group.getAll();
+        const unplaced = children
+            .filter(c => c.getData && c.getData('listIndex') !== undefined && !c.getData('placed'))
+            .sort((a, b) => a.getData('listIndex') - b.getData('listIndex'));
+
+        let slot = 0;
+        unplaced.forEach(container => {
+            if (slot >= scrollIndex && slot < scrollIndex + VISIBLE_COUNT) {
+                const newY = itemStartY + (slot - scrollIndex) * itemHeight;
+                container.x = ax + 20;
+                container.y = newY;
+                container.setData('originalX', ax + 20);
+                container.setData('originalY', newY);
+                container.setVisible(true);
+            } else {
+                container.setVisible(false);
+            }
+            slot++;
+        });
+
+        // Update scroll button states
+        const canScrollUp   = scrollIndex > 0;
+        const canScrollDown = slot > scrollIndex + VISIBLE_COUNT;
+        if (this.scrollUpBtn) {
+            this.scrollUpBtn.bg.setFillStyle(canScrollUp ? 0x2196F3 : 0xBBDEFB);
+            this.scrollUpBtn.bg.setAlpha(canScrollUp ? 1 : 0.5);
+            this.scrollUpBtn.text.setColor(canScrollUp ? '#ffffff' : '#90CAF9');
+        }
+        if (this.scrollDownBtn) {
+            this.scrollDownBtn.bg.setFillStyle(canScrollDown ? 0x2196F3 : 0xBBDEFB);
+            this.scrollDownBtn.bg.setAlpha(canScrollDown ? 1 : 0.5);
+            this.scrollDownBtn.text.setColor(canScrollDown ? '#ffffff' : '#90CAF9');
+        }
+
+        // Show/hide the scroll area label
+        if (this.scrollPageLabel) {
+            const total = unplaced.length;
+            if (total > VISIBLE_COUNT) {
+                const firstShown = Math.min(scrollIndex + 1, total);
+                const lastShown  = Math.min(scrollIndex + VISIBLE_COUNT, total);
+                this.scrollPageLabel.setText(`${firstShown}–${lastShown} of ${total}`);
+                this.scrollPageLabel.setVisible(true);
+            } else {
+                this.scrollPageLabel.setVisible(false);
+            }
+        }
     }
     
+    /**
+     * Update the item-name list shown inside a storage zone after a placement or restore.
+     * Shows up to 4 names; appends "…+N more" when there are additional items.
+     */
+    refreshZoneItemNames(zone) {
+        const zoneData      = zone.getData('zoneData');
+        const namesText     = zone.getData('zoneItemNames');
+        const capacityText  = zone.getData('capacityText');
+        if (!namesText || !zoneData) return;
+
+        const placed = this.itemContainers.filter(
+            c => c.getData('placed') && c.getData('zone') === zoneData.name
+        );
+
+        if (placed.length === 0) {
+            namesText.setText('');
+            if (capacityText) { capacityText.setText('Empty'); capacityText.setColor('#999999'); }
+            return;
+        }
+
+        const MAX_SHOWN = 4;
+        const names = placed.map(c => c.getData('foodItem')?.name || '?');
+        let display = names.slice(0, MAX_SHOWN).join('\n');
+        if (names.length > MAX_SHOWN) {
+            display += `\n…+${names.length - MAX_SHOWN} more`;
+        }
+        namesText.setText(display);
+
+        if (capacityText) {
+            const n = placed.length;
+            capacityText.setText(`${n} item${n > 1 ? 's' : ''}`);
+            capacityText.setColor('#333333');
+        }
+    }
+
     /**
      * Build all three zone panels and default to showing only fridge
      */
@@ -347,12 +459,21 @@ class FridgeMinigame extends Phaser.Scene {
             fontFamily: 'Fredoka, Arial',
             color: '#999999'
         }).setOrigin(0, 1);
-        
-        zone.add([shadow, bg, iconBadge, icon, label, desc, capacityText]);
+
+        // Item name list shown below the zone description
+        const zoneItemNames = this.add.text(15, 63, '', {
+            fontSize: '13px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#555555',
+            wordWrap: { width: width - 35 }
+        }).setOrigin(0, 0);
+
+        zone.add([shadow, bg, iconBadge, icon, label, desc, zoneItemNames, capacityText]);
         zone.setData('zoneData', zoneData);
         zone.setData('isZone', true);
         zone.setData('bg', bg);
         zone.setData('capacityText', capacityText);
+        zone.setData('zoneItemNames', zoneItemNames);
         zone.setData('itemsInZone', 0);
         
         bg.setInteractive({ dropZone: true });
@@ -406,9 +527,11 @@ class FridgeMinigame extends Phaser.Scene {
         );
         filtered.sort(FoodItem.compareByFreshness);
         
-        filtered.slice(0, 6).forEach((item, index) => {
+        filtered.forEach((item, index) => {
             const itemY = itemStartY + index * itemHeight;
             this.createDraggableItem(ax + 20, itemY, item, group);
+            // Tag each card with its position in the sorted list for scroll layout
+            this.itemContainers[this.itemContainers.length - 1].setData('listIndex', index);
         });
         
         if (filtered.length === 0) {
@@ -668,7 +791,9 @@ class FridgeMinigame extends Phaser.Scene {
         itemContainer.setVisible(false);
         itemContainer.setData('placed', true);
         itemContainer.setData('zone', zoneData.name);
-        
+
+        this.refreshZoneItemNames(zone);
+        this.updateItemListLayout(this.activeTab);
         this.updateProgressTracker();
     }
 
@@ -704,7 +829,69 @@ class FridgeMinigame extends Phaser.Scene {
             }
         });
 
+        // Re-layout the active tab so placed items are hidden and remaining ones fill slots
+        this.updateItemListLayout(this.activeTab);
+
+        // Refresh item name labels in every zone
+        allZones.forEach(zone => this.refreshZoneItemNames(zone));
+
         this.updateProgressTracker();
+    }
+
+    /**
+     * Create scroll ▲/▼ buttons and a page label at the bottom of the items panel.
+     * These allow the player to page through more than VISIBLE_COUNT items per tab.
+     */
+    createScrollButtons() {
+        const ax = 800, ay = 100, aw = 430, ah = 580;
+        const btnY  = ay + ah - 18;   // y=662 — inside the panel, bottom strip
+        const btnW  = 44, btnH = 26;
+
+        // ▲ Up button
+        const upBg = this.add.rectangle(ax + aw - 60, btnY, btnW, btnH, 0xBBDEFB)
+            .setStrokeStyle(2, 0x1565C0).setAlpha(0.5);
+        const upText = this.add.text(ax + aw - 60, btnY, '▲', {
+            fontSize: '15px',
+            fontFamily: 'Arial',
+            color: '#90CAF9',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        upBg.setInteractive({ useHandCursor: true });
+        upBg.on('pointerdown', () => {
+            if (this.scrollIndexes[this.activeTab] > 0) {
+                this.scrollIndexes[this.activeTab]--;
+                this.updateItemListLayout(this.activeTab);
+            }
+        });
+        upBg.on('pointerover', () => { if (upBg.alpha > 0.5) upBg.setFillStyle(0x90CAF9); });
+        upBg.on('pointerout',  () => { if (upBg.alpha > 0.5) upBg.setFillStyle(0x2196F3); });
+
+        // ▼ Down button
+        const downBg = this.add.rectangle(ax + aw - 12, btnY, btnW, btnH, 0xBBDEFB)
+            .setStrokeStyle(2, 0x1565C0).setAlpha(0.5);
+        const downText = this.add.text(ax + aw - 12, btnY, '▼', {
+            fontSize: '15px',
+            fontFamily: 'Arial',
+            color: '#90CAF9',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        downBg.setInteractive({ useHandCursor: true });
+        downBg.on('pointerdown', () => {
+            this.scrollIndexes[this.activeTab]++;
+            this.updateItemListLayout(this.activeTab);
+        });
+        downBg.on('pointerover', () => { if (downBg.alpha > 0.5) downBg.setFillStyle(0x90CAF9); });
+        downBg.on('pointerout',  () => { if (downBg.alpha > 0.5) downBg.setFillStyle(0x2196F3); });
+
+        // Page indicator label (e.g. "1–6 of 10")
+        this.scrollPageLabel = this.add.text(ax + aw - 115, btnY, '', {
+            fontSize: '13px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#666666'
+        }).setOrigin(0.5).setVisible(false);
+
+        this.scrollUpBtn   = { bg: upBg,   text: upText   };
+        this.scrollDownBtn = { bg: downBg, text: downText };
     }
 
     /**

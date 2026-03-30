@@ -115,21 +115,6 @@ class ManagementScene extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0, 0);
         
-        // Streak Counter (if streak > 0)
-        if (this.household.lowWasteStreak > 0) {
-            this.createBadge(
-                panelX + 275, panelY + 140,
-                '🔥', `${this.household.lowWasteStreak}`, 0xFF5722, 45, true
-            );
-            
-            this.add.text(panelX + 275, panelY + 168, 'Day Streak!', {
-                fontSize: '12px',
-                fontFamily: 'Fredoka, Arial',
-                color: '#FF5722',
-                fontStyle: 'bold'
-            }).setOrigin(0.5, 0);
-        }
-        
         // Achievement Badges (show up to 3)
         const achievementIds = this.household.achievements || [];
         const achievementData = {
@@ -580,6 +565,13 @@ class ManagementScene extends Phaser.Scene {
      */
     advanceDay() {
         console.log('⏩ Advancing to next day...');
+
+        // Block end-of-day if no meal has been cooked today
+        const mealsToday = this.household.dailyHistory?.[this.household.day - 1]?.mealsCooked;
+        if (!mealsToday || mealsToday.length === 0) {
+            this.showCookingRequiredMessage();
+            return;
+        }
         
         // Run daily simulation
         const dailyResults = gameState.advanceDay();
@@ -588,6 +580,48 @@ class ManagementScene extends Phaser.Scene {
         this.showDailyResults(dailyResults);
     }
     
+    /**
+     * Show a blocking modal when the player tries to end the day without cooking
+     */
+    showCookingRequiredMessage() {
+        const width  = this.cameras.main.width;
+        const height = this.cameras.main.height;
+
+        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.5)
+            .setOrigin(0, 0).setDepth(2000).setInteractive();
+
+        const panel = this.add.rectangle(width / 2, height / 2, 520, 220, 0xffffff)
+            .setStrokeStyle(4, 0xF44336).setDepth(2001);
+
+        const titleText = this.add.text(width / 2, height / 2 - 60, 'Not so fast!', {
+            fontSize: '34px', fontFamily: 'Fredoka, Arial',
+            color: '#F44336', fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(2002);
+
+        const bodyText = this.add.text(width / 2, height / 2 - 10, 'You need to cook a meal\nbefore ending the day.', {
+            fontSize: '22px', fontFamily: 'Fredoka, Arial',
+            color: '#333333', align: 'center'
+        }).setOrigin(0.5).setDepth(2002);
+
+        const okBg = this.add.rectangle(width / 2, height / 2 + 70, 180, 50, 0xF44336)
+            .setDepth(2002).setInteractive({ useHandCursor: true });
+        const okText = this.add.text(width / 2, height / 2 + 70, 'OK, got it', {
+            fontSize: '22px', fontFamily: 'Fredoka, Arial', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(2003);
+
+        const dismiss = () => {
+            overlay.destroy();
+            panel.destroy();
+            titleText.destroy();
+            bodyText.destroy();
+            okBg.destroy();
+            okText.destroy();
+        };
+
+        okBg.on('pointerdown', dismiss);
+        overlay.on('pointerdown', dismiss);
+    }
+
     /**
      * Show daily simulation results
      */
@@ -624,7 +658,6 @@ class ManagementScene extends Phaser.Scene {
         const lines = [
             `🗑️ Waste: ${results.wasteResults.wasteWeight.toFixed(2)} lbs ($${results.wasteResults.wasteCost.toFixed(2)})`,
             `🍽️ Items consumed: ${results.wasteResults.consumedItems.length}`,
-            `📊 Waste Awareness: ${this.household.wasteAwareness.toFixed(0)}%`,
         ];
         
         // Random event?
