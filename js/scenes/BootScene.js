@@ -26,17 +26,14 @@ class BootScene extends Phaser.Scene {
         // Load hydra dialogue
         this.load.json('hydraDialogue', 'assets/data/hydra-dialogue.json');
         
-        // Load hydra guide sprite
-        this.load.image('hydraGuide', 'assets/sprites/Hydra Sprite.png');
+        // Paths under assets/sprites/ (encode filenames with spaces for reliable HTTP loads)
+        const sprite = (file) => 'assets/sprites/' + encodeURIComponent(file);
 
-        // Load pantry cabinet background
-        this.load.image('pantryCabinet', 'assets/sprites/Open Pantry empty.png');
-
-        this.load.image('titleScreen', 'assets/sprites/Title screen.png');
-
-        this.load.image('homescreen', 'assets/sprites/Homescreen.png');
-
-        this.load.image('setupPageBg', 'assets/sprites/Household set up page.png');
+        this.load.image('hydraGuide', sprite('Hydra Sprite.png'));
+        this.load.image('pantryCabinet', sprite('Open Pantry empty.png'));
+        this.load.image('titleScreen', sprite('Updated Title screen.png'));
+        this.load.image('homescreen', sprite('Homescreen.png'));
+        this.load.image('setupPageBg', sprite('Household set up page.png'));
         
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');

@@ -26,9 +26,12 @@ class ManagementScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // Background: homescreen art (cover); use Math.min for letterbox fit if preferred
-        if (this.textures.exists('homescreen')) {
-            const bg = this.add.image(width / 2, height / 2, 'homescreen');
+        // Background: household setup page art on dashboard; fallback to homescreen, then solid color
+        const dashBgKey = this.textures.exists('setupPageBg')
+            ? 'setupPageBg'
+            : (this.textures.exists('homescreen') ? 'homescreen' : null);
+        if (dashBgKey) {
+            const bg = this.add.image(width / 2, height / 2, dashBgKey);
             const coverScale = Math.max(width / bg.width, height / bg.height);
             bg.setScale(coverScale);
         } else {

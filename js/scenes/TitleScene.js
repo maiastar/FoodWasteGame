@@ -14,9 +14,11 @@ class TitleScene extends Phaser.Scene {
         // Letterbox bars if aspect ratio differs from the PNG (switch to Math.max for cover/crop)
         this.add.rectangle(0, 0, width, height, 0xE8F5E9).setOrigin(0, 0);
 
-        const titleBg = this.add.image(width / 2, height / 2, 'titleScreen');
-        const fitScale = Math.min(width / titleBg.width, height / titleBg.height);
-        titleBg.setScale(fitScale);
+        if (this.textures.exists('titleScreen')) {
+            const titleBg = this.add.image(width / 2, height / 2, 'titleScreen');
+            const fitScale = Math.min(width / titleBg.width, height / titleBg.height);
+            titleBg.setScale(fitScale);
+        }
 
         // Start Game button
         const btnW = 340;

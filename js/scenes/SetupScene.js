@@ -22,9 +22,12 @@ class SetupScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // Background: setup art (cover); use Math.min for letterbox fit if preferred
-        if (this.textures.exists('setupPageBg')) {
-            const bg = this.add.image(width / 2, height / 2, 'setupPageBg');
+        // Background: homescreen art on setup; fallback to setup page asset, then solid color
+        const setupBgKey = this.textures.exists('homescreen')
+            ? 'homescreen'
+            : (this.textures.exists('setupPageBg') ? 'setupPageBg' : null);
+        if (setupBgKey) {
+            const bg = this.add.image(width / 2, height / 2, setupBgKey);
             const coverScale = Math.max(width / bg.width, height / bg.height);
             bg.setScale(coverScale);
         } else {
