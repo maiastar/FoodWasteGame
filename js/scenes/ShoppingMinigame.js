@@ -44,6 +44,13 @@ class ShoppingMinigame extends Phaser.Scene {
         
         const recipeData = this.cache.json.get('recipes');
         this.recipeCatalog = recipeData && recipeData.recipes ? recipeData.recipes : [];
+
+        const recipeIngredientNames = new Set(
+            this.recipeCatalog.flatMap(r => r.ingredients.map(i => i.name))
+        );
+        this.availableItems = this.availableItems.filter(item =>
+            recipeIngredientNames.has(item.name)
+        );
         
         // Auto-detect planned recipes from meal planning minigame
         const plannedIds = this.household.presetRecipeIds || [];
@@ -177,33 +184,9 @@ class ShoppingMinigame extends Phaser.Scene {
             console.log(`📝 Planned shopping list generated: ${this.shoppingList.length} items`);
             return;
         }
-        
-        const daysToShop = this.household.getShoppingFrequency();
-        const totalServingsNeeded = this.household.getDailyServingsNeeded() * daysToShop;
-        const currentServings = this.inventory.getTotalServings();
-        
-        // Need to shop if low on food
-        const servingsDeficit = Math.max(0, totalServingsNeeded - currentServings);
-        
-        // Basic shopping list (simplified for prototype)
-        const basicItems = [
-            'Milk', 'Bread', 'Eggs', 'Chicken Breast',
-            'Lettuce', 'Tomato', 'Onion', 'Pasta', 'Rice'
-        ];
-        
-        // Filter items we already have sufficient quantity of
-        basicItems.forEach(itemName => {
-            const needed = Math.ceil(this.household.familySize * 0.5);
-            if (!this.inventory.hasSufficientQuantity(itemName, needed)) {
-                this.shoppingList.push({
-                    name: itemName,
-                    needed: needed,
-                    purchased: false
-                });
-            }
-        });
-        
-        console.log(`📝 Shopping list generated: ${this.shoppingList.length} items`);
+
+        // No meal plan from PlanningMinigame — list stays empty (player shops freely)
+        console.log('📝 No planned recipes; shopping list empty (complete Plan Meals to populate)');
     }
     
     /**

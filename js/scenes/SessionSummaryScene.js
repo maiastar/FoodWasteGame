@@ -117,10 +117,10 @@ class SessionSummaryScene extends Phaser.Scene {
                 label: 'Meal Planning',
                 color: '#2196F3',
                 text: bd.Pm >= 80
-                    ? `Your score of ${bd.Pm} shows you bought only what you needed — very little over-shopping.`
+                    ? `Your score of ${bd.Pm} reflects strong planning — you thought ahead about meals and shopped to match, so what you brought home lined up with what you actually ate.`
                     : bd.Pm >= 60
-                    ? `Your score of ${bd.Pm} suggests you occasionally bought more than you used, causing some waste.`
-                    : `Your score of ${bd.Pm} indicates frequent over-shopping — much of what you bought went uneaten.`
+                    ? `Your score of ${bd.Pm} suggests shopping sometimes got ahead of your plan: when purchases don’t line up with what you’ve scheduled to cook, extra food can sit unused.`
+                    : `Your score of ${bd.Pm} points to shopping without much look-ahead — without a clear picture of upcoming meals, it’s easy to buy food you never get around to using.`
             },
             {
                 label: 'Storage',

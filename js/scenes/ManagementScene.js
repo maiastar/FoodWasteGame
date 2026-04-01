@@ -26,8 +26,14 @@ class ManagementScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // Background
-        this.add.rectangle(0, 0, width, height, 0xE3F2FD).setOrigin(0, 0);
+        // Background: homescreen art (cover); use Math.min for letterbox fit if preferred
+        if (this.textures.exists('homescreen')) {
+            const bg = this.add.image(width / 2, height / 2, 'homescreen');
+            const coverScale = Math.max(width / bg.width, height / bg.height);
+            bg.setScale(coverScale);
+        } else {
+            this.add.rectangle(0, 0, width, height, 0xE3F2FD).setOrigin(0, 0);
+        }
         
         // Create dashboard layout (4 quadrants)
         this.createHeader();
@@ -76,7 +82,7 @@ class ManagementScene extends Phaser.Scene {
         const panelX = 30;
         const panelY = 100;
         const panelWidth = 380;
-        const panelHeight = 175;
+        const panelHeight = 240;
         
         // Modern panel with shadow
         const panelContainer = this.createModernPanel(panelX, panelY, panelWidth, panelHeight);
@@ -94,7 +100,7 @@ class ManagementScene extends Phaser.Scene {
         const initialBudget = 100; // Assume starting budget for progress bar
         
         // Budget Progress Bar
-        this.add.text(panelX + 20, panelY + 60, '💰 Budget', {
+        this.add.text(panelX + 20, panelY + 60, '💰 Weekly Budget', {
             fontSize: '18px',
             fontFamily: 'Fredoka, Arial',
             color: '#666666',
@@ -114,6 +120,26 @@ class ManagementScene extends Phaser.Scene {
             color: '#333333',
             fontStyle: 'bold'
         }).setOrigin(0, 0);
+
+        // Happiness meter
+        const happiness = this.household.happiness ?? 100;
+        const happinessColor = happiness >= 80 ? '#4CAF50' : happiness >= 50 ? '#FFC107' : '#F44336';
+
+        this.add.text(panelX + 20, panelY + 145, '😊 Household Mood', {
+            fontSize: '18px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#666666',
+            fontStyle: 'bold'
+        }).setOrigin(0, 0);
+
+        this.createProgressBar(panelX + 20, panelY + 173, 150, 18, happiness, 100);
+
+        this.add.text(panelX + 185, panelY + 173, `${Math.round(happiness)}%`, {
+            fontSize: '16px',
+            fontFamily: 'Fredoka, Arial',
+            color: happinessColor,
+            fontStyle: 'bold'
+        }).setOrigin(0, 0.5);
         
         // Achievement Badges (show up to 3)
         const achievementIds = this.household.achievements || [];
@@ -128,7 +154,7 @@ class ManagementScene extends Phaser.Scene {
             const ach = achievementData[achId];
             if (ach) {
                 this.createBadge(
-                    panelX + 240 + index * 50, panelY + 160,
+                    panelX + 240 + index * 50, panelY + 215,
                     ach.icon, '', ach.color, 35, false
                 );
             }
@@ -392,6 +418,106 @@ class ManagementScene extends Phaser.Scene {
     }
     
     /**
+     * Day 1: enforce Plan → Shop → Fridge → Cook on the dashboard
+     */
+    isDay1Sequenced() {
+        return this.household.day === 1;
+    }
+
+    getDay1StepUnlock() {
+        const h = this.household;
+        return {
+            plan: true,
+            shop: (h.mealPlan && h.mealPlan.length > 0),
+            fridge: h.lastShoppingDay === h.day,
+            cook: h.lastFridgeDay === h.day
+        };
+    }
+
+    /**
+     * Wire pointerup for an action button; on day 1, lock until prior steps are done
+     * @param {Phaser.GameObjects.Rectangle} bg - interactive hit area returned by button helpers
+     * @param {number} baseColor - fill color when enabled
+     * @param {boolean} enabled - whether the action is allowed today
+     * @param {string} lockedContextKey - hydra-dialogue decisions key when locked
+     * @param {function} onAllowed - runs when the player uses an unlocked button
+     */
+    configureDay1ActionButton(bg, baseColor, enabled, lockedContextKey, onAllowed) {
+        if (!this.isDay1Sequenced()) {
+            bg.on('pointerup', onAllowed);
+            return;
+        }
+        if (enabled) {
+            bg.on('pointerup', onAllowed);
+            return;
+        }
+        bg.removeAllListeners();
+        const dim = Phaser.Display.Color.IntegerToColor(baseColor).darken(38).color;
+        bg.setFillStyle(dim);
+        bg.setAlpha(0.72);
+        bg.setStrokeStyle(4, 0xcccccc);
+        bg.setInteractive({ useHandCursor: true });
+        bg.on('pointerover', () => bg.setAlpha(0.88));
+        bg.on('pointerout', () => bg.setAlpha(0.72));
+        bg.on('pointerup', () => this.showDay1SequenceHint(lockedContextKey));
+    }
+
+    showDay1SequenceHint(contextKey) {
+        const hydra = new HydraGuide(this);
+        if (hydra.shouldShow()) {
+            hydra.showDecisionAdvice(contextKey);
+            return;
+        }
+        const raw = this.cache.json.has('hydraDialogue')
+            ? this.cache.json.get('hydraDialogue')
+            : null;
+        const advice = (raw && raw.decisions && raw.decisions[contextKey] && raw.decisions[contextKey].advice)
+            ? raw.decisions[contextKey].advice
+            : 'On day 1, follow this order: Plan Meals, then Go Shopping, then Organize Fridge, then Cook Meal.';
+        this.showDay1FallbackHintModal(advice);
+    }
+
+    showDay1FallbackHintModal(advice) {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+
+        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.5)
+            .setOrigin(0, 0).setDepth(2000).setInteractive();
+
+        const panel = this.add.rectangle(width / 2, height / 2, 540, 240, 0xffffff)
+            .setStrokeStyle(4, 0xF9A825).setDepth(2001);
+
+        const titleText = this.add.text(width / 2, height / 2 - 70, 'Tip', {
+            fontSize: '30px', fontFamily: 'Fredoka, Arial',
+            color: '#E65100', fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(2002);
+
+        const bodyText = this.add.text(width / 2, height / 2 - 15, advice, {
+            fontSize: '18px', fontFamily: 'Fredoka, Arial',
+            color: '#333333', align: 'center',
+            wordWrap: { width: 480 }
+        }).setOrigin(0.5).setDepth(2002);
+
+        const okBg = this.add.rectangle(width / 2, height / 2 + 85, 180, 46, 0xF9A825)
+            .setDepth(2002).setInteractive({ useHandCursor: true });
+        const okText = this.add.text(width / 2, height / 2 + 85, 'OK', {
+            fontSize: '20px', fontFamily: 'Fredoka, Arial', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(2003);
+
+        const dismiss = () => {
+            overlay.destroy();
+            panel.destroy();
+            titleText.destroy();
+            bodyText.destroy();
+            okBg.destroy();
+            okText.destroy();
+        };
+
+        okBg.on('pointerdown', dismiss);
+        overlay.on('pointerdown', dismiss);
+    }
+
+    /**
      * Create action panel (bottom-right quadrant)
      */
     createActionPanel() {
@@ -422,16 +548,24 @@ class ManagementScene extends Phaser.Scene {
         const expiringItems = this.inventory.getExpiringSoonItems();
         const summary = this.inventory.getSummary();
         const isShoppingDay = this.household.isShoppingDay();
+
+        const day1 = this.isDay1Sequenced();
+        const gate = day1 ? this.getDay1StepUnlock() : null;
+        const shopEnabled = !day1 || gate.shop;
+        const fridgeEnabled = !day1 || gate.fridge;
+        const cookEnabled = !day1 || gate.cook;
         
         // Shopping button (with badge if shopping day)
         const shopBtn = this.createEnhancedActionButton(
             centerX, buttonsY, '🛒 Go Shopping', 0x4CAF50, 250, buttonHeight,
             isShoppingDay ? {icon: '!', color: 0xFFD700} : null
         );
-        shopBtn.on('pointerdown', () => {
-            this.scene.start('GroceryTravelScene', {
-                direction: 'store',
-                nextScene: 'ShoppingMinigame'
+        this.configureDay1ActionButton(shopBtn, 0x4CAF50, shopEnabled, 'day1-need-plan', () => {
+            this.time.delayedCall(0, () => {
+                this.scene.start('GroceryTravelScene', {
+                    direction: 'store',
+                    nextScene: 'ShoppingMinigame'
+                });
             });
         });
         
@@ -441,8 +575,8 @@ class ManagementScene extends Phaser.Scene {
             centerX, buttonsY + buttonSpacing, '🍳 Cook Meal', 0xFF9800, 250, buttonHeight,
             cookingBadge
         );
-        cookBtn.on('pointerdown', () => {
-            this.scene.start('CookingMinigame');
+        this.configureDay1ActionButton(cookBtn, 0xFF9800, cookEnabled, 'day1-need-fridge', () => {
+            this.time.delayedCall(0, () => this.scene.start('CookingMinigame'));
         });
         
         // Fridge button (with badge if organization needed)
@@ -452,21 +586,44 @@ class ManagementScene extends Phaser.Scene {
             centerX, buttonsY + buttonSpacing * 2, '📦 Organize Fridge', 0x2196F3, 250, buttonHeight,
             fridgeBadge
         );
-        fridgeBtn.on('pointerdown', () => {
-            this.scene.start('FridgeMinigame');
+        this.configureDay1ActionButton(fridgeBtn, 0x2196F3, fridgeEnabled, 'day1-need-shop', () => {
+            this.time.delayedCall(0, () => this.scene.start('FridgeMinigame'));
         });
         
         // Planning button (aligned with others)
         const planBtn = this.createActionButton(centerX, buttonsY + buttonSpacing * 3, '📅 Plan Meals', 0x9C27B0, 250, buttonHeight);
-        planBtn.on('pointerdown', () => {
-            this.scene.start('PlanningMinigame');
+        planBtn.on('pointerup', () => {
+            this.time.delayedCall(0, () => this.scene.start('PlanningMinigame'));
         });
+
+        if (day1 && gate) {
+            if (!gate.shop) {
+                this.addPulseAnimation(planBtn, 1.04, 700);
+            } else if (!gate.fridge) {
+                this.addPulseAnimation(shopBtn, 1.04, 700);
+            } else if (!gate.cook) {
+                this.addPulseAnimation(fridgeBtn, 1.04, 700);
+            } else {
+                this.addPulseAnimation(cookBtn, 1.04, 700);
+            }
+        }
         
         // End Day button (bottom-right corner of screen, not hardcoded Y)
         const height = this.cameras.main.height;
         const advanceBtn = this.createActionButton(width - 120, height - 50, '⏭️ End Day', 0x9C27B0, 220, 50);
         advanceBtn.on('pointerdown', () => {
             this.advanceDay();
+        });
+
+        const quitBtn = this.createActionButton(120, height - 50, 'Return to title', 0x607D8B, 220, 50);
+        quitBtn.on('pointerdown', () => {
+            if (!window.confirm('End your current game and return to the title screen? Your saved progress will be cleared.')) {
+                return;
+            }
+            gameState.clearSave();
+            gameState.household = null;
+            gameState.inventory = null;
+            this.scene.start('TitleScene');
         });
     }
     
@@ -962,6 +1119,7 @@ class ManagementScene extends Phaser.Scene {
         panel.setOrigin(0, 0);
         
         container.add([shadow, panel]);
+        container.setAlpha(0.85);
         return container;
     }
 }

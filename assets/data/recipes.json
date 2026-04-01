@@ -22,7 +22,7 @@
       "cookTime": 10,
       "servings": 2,
       "ingredients": [
-        { "name": "Eggs", "quantity": 2 },
+        { "name": "Eggs", "quantity": 1 },
         { "name": "Milk", "quantity": 1 }
       ],
       "category": "breakfast",
@@ -36,7 +36,9 @@
       "cookTime": 30,
       "servings": 4,
       "ingredients": [
-        { "name": "Chicken Breast", "quantity": 1 }
+        { "name": "Chicken Breast", "quantity": 1 },
+        { "name": "Broccoli", "quantity": 1 },
+        { "name": "Carrot", "quantity": 1 }
       ],
       "category": "dinner",
       "wasteReductionTip": "Use chicken within 2 days or freeze it immediately!",
@@ -49,7 +51,10 @@
       "cookTime": 15,
       "servings": 3,
       "ingredients": [
-        { "name": "Rice", "quantity": 1 }
+        { "name": "Rice", "quantity": 1 },
+        { "name": "Broccoli", "quantity": 1 },
+        { "name": "Carrot", "quantity": 1 },
+        { "name": "Onion", "quantity": 1 }
       ],
       "category": "dinner",
       "wasteReductionTip": "Stir fry is perfect for using up vegetables before they spoil!",
@@ -63,7 +68,8 @@
       "servings": 2,
       "ingredients": [
         { "name": "Lettuce", "quantity": 1 },
-        { "name": "Tomato", "quantity": 1 }
+        { "name": "Tomato", "quantity": 1 },
+        { "name": "Carrot", "quantity": 1 }
       ],
       "category": "lunch",
       "wasteReductionTip": "Wash lettuce just before eating - stays fresh longer!",
@@ -76,7 +82,9 @@
       "cookTime": 25,
       "servings": 3,
       "ingredients": [
-        { "name": "Salmon", "quantity": 1 }
+        { "name": "Salmon", "quantity": 1 },
+        { "name": "Potato", "quantity": 1 },
+        { "name": "Broccoli", "quantity": 1 }
       ],
       "category": "dinner",
       "wasteReductionTip": "Fish must be cooked within 1 day of purchase!",
@@ -89,7 +97,9 @@
       "cookTime": 15,
       "servings": 4,
       "ingredients": [
-        { "name": "Rice", "quantity": 1 }
+        { "name": "Rice", "quantity": 1 },
+        { "name": "Canned Beans", "quantity": 1 },
+        { "name": "Onion", "quantity": 1 }
       ],
       "category": "lunch",
       "wasteReductionTip": "Combine shelf-stable and fresh ingredients for balanced meals!",

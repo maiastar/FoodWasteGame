@@ -45,8 +45,6 @@ class HydraGuide {
             return;
         }
 
-        this.onCompleteCallback = onComplete;
-
         const feedbackKey = this.selectFeedbackVariant(context, results);
         const dialogue = this.dialogueData.feedback[feedbackKey];
 
@@ -56,22 +54,40 @@ class HydraGuide {
             return;
         }
 
-        this.show(dialogue, 'feedback', results);
+        this.show(dialogue, 'feedback', results, onComplete);
     }
 
     /**
      * Show introduction advice (tutorial)
      */
-    introduceSelf() {
+    introduceSelf(onComplete = null) {
         if (!this.dialogueData || !this.dialogueData.introduction) return;
-        this.show(this.dialogueData.introduction, 'tutorial');
+        this.show(this.dialogueData.introduction, 'tutorial', {}, onComplete);
+    }
+
+    /**
+     * Day-one dashboard intro: ideal minigame order (single card, tutorial styling)
+     * @param {function} onComplete - when user dismisses the card
+     */
+    introduceDayOneIdealFlow(onComplete = null) {
+        if (!this.dialogueData) return;
+        const d = this.dialogueData.decisions && this.dialogueData.decisions['day1-ideal-flow'];
+        if (d) {
+            this.show(d, 'tutorial', {}, onComplete);
+        } else if (this.dialogueData.introduction) {
+            this.show(this.dialogueData.introduction, 'tutorial', {}, onComplete);
+        }
     }
 
     /**
      * Render the advice card
      */
-    show(dialogue, type = 'decision', context = {}) {
+    show(dialogue, type = 'decision', context = {}, onComplete = null) {
         if (this.isVisible) return;
+
+        if (onComplete) {
+            this.onCompleteCallback = onComplete;
+        }
 
         this.isVisible = true;
         const width  = this.scene.cameras.main.width;

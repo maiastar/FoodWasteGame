@@ -18,6 +18,22 @@
 
     "planning-entry": {
       "advice": "Planning your meals for the week helps you write a focused shopping list. Think about how many people you're feeding and how many days you want to plan for."
+    },
+
+    "day1-ideal-flow": {
+      "advice": "Welcome to your dashboard! On your first day, follow this order — it mirrors how real households cut waste: (1) Plan Meals so you know what to buy, (2) Go Shopping with that plan in mind, (3) Organize Fridge so new groceries go in smart spots, (4) Cook Meal using what you have. Check Stats and Inventory anytime. I'll nudge you if a step is still locked!"
+    },
+
+    "day1-need-plan": {
+      "advice": "Start with Plan Meals first. When you save a plan, you'll unlock Go Shopping — that way you buy for real meals, not random extras."
+    },
+
+    "day1-need-shop": {
+      "advice": "Head to Go Shopping before organizing the fridge. You want your groceries home before you decide where they live in the fridge."
+    },
+
+    "day1-need-fridge": {
+      "advice": "Organize Fridge before cooking today. Putting food away neatly helps you see what you have and use it before it spoils."
     }
   },
 

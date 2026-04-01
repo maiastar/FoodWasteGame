@@ -22,8 +22,14 @@ class SetupScene extends Phaser.Scene {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
         
-        // Background
-        this.add.rectangle(0, 0, width, height, 0x87CEEB).setOrigin(0, 0);
+        // Background: setup art (cover); use Math.min for letterbox fit if preferred
+        if (this.textures.exists('setupPageBg')) {
+            const bg = this.add.image(width / 2, height / 2, 'setupPageBg');
+            const coverScale = Math.max(width / bg.width, height / bg.height);
+            bg.setScale(coverScale);
+        } else {
+            this.add.rectangle(0, 0, width, height, 0x87CEEB).setOrigin(0, 0);
+        }
         
         // Title
         this.add.text(width / 2, 60, '🏠 Set Up Your Household', {
@@ -33,13 +39,6 @@ class SetupScene extends Phaser.Scene {
             fontStyle: 'bold',
             stroke: '#333333',
             strokeThickness: 6
-        }).setOrigin(0.5);
-        
-        // Subtitle
-        this.add.text(width / 2, 120, 'Choose your family settings to begin!', {
-            fontSize: '24px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#ffffff'
         }).setOrigin(0.5);
         
         // Create configuration sections

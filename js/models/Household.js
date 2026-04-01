@@ -30,6 +30,7 @@ class Household {
         this.totalSpent = 0; // dollars
         this.mealsCompleted = 0;
         this.shoppingTrips = 0;
+        this.happiness = 100; // 0-100, starts fully happy
         this.lastShoppingDay = config.lastShoppingDay || 0;
         this.lastFridgeDay   = config.lastFridgeDay   || 0;
         this.inedibleWasteWeight = 0;
@@ -40,6 +41,9 @@ class Household {
         
         // Meal planning
         this.mealPlan = []; // Array of {day, mealType, recipeId}
+
+        // Day-one Hydra ideal-flow intro (shown once per save)
+        this.day1FlowIntroShown = !!config.day1FlowIntroShown;
         
         // Achievements & Streaks
         this.lowWasteStreak = 0; // Consecutive days with waste < 2 lbs
@@ -52,7 +56,7 @@ class Household {
         // Hidden decision scoring (not shown during gameplay)
         this.hiddenScore = config.hiddenScore || 0;
         this.decisionHistory = config.decisionHistory || [];
-        this.sessionDayLimit = config.sessionDayLimit || 14;
+        this.sessionDayLimit = config.sessionDayLimit || 7;
         this.sessionCompleted = !!config.sessionCompleted;
         this.insightCounters = config.insightCounters || {
             plannedShoppingTrips: 0,
@@ -160,9 +164,29 @@ class Household {
     }
     
     /**
+     * Apply daily happiness change based on how well the household was fed today.
+     * Requires 2 servings per family member. Call before incrementing the day.
+     */
+    applyDailyHappiness() {
+        const today = this.dailyHistory[this.day - 1];
+        const mealsCooked = today ? today.mealsCooked : [];
+        const totalServings = mealsCooked.reduce((sum, m) => sum + (m.servings || 0), 0);
+        const requiredServings = this.familySize * 2;
+
+        if (totalServings >= requiredServings) {
+            this.happiness = Math.min(100, this.happiness + 2);
+        } else {
+            const shortfall = 1 - (totalServings / requiredServings);
+            const penalty = Math.round(shortfall * 15);
+            this.happiness = Math.max(0, this.happiness - penalty);
+        }
+    }
+
+    /**
      * Advance to the next day
      */
     advanceDay() {
+        this.applyDailyHappiness();
         this.day++;
         
         // Check if we've started a new week
@@ -531,6 +555,7 @@ class Household {
             day: this.day,
             week: this.week,
             budget: this.budget,
+            happiness: this.happiness,
             wasteAwareness: this.wasteAwareness,
             storageQuality: this.storageQuality,
             
@@ -680,6 +705,7 @@ class Household {
             totalSpent: this.totalSpent,
             mealsCompleted: this.mealsCompleted,
             shoppingTrips: this.shoppingTrips,
+            happiness: this.happiness,
             lastShoppingDay: this.lastShoppingDay,
             lastFridgeDay:   this.lastFridgeDay,
             inedibleWasteWeight: this.inedibleWasteWeight,
@@ -694,6 +720,7 @@ class Household {
             sessionDayLimit: this.sessionDayLimit,
             sessionCompleted: this.sessionCompleted,
             insightCounters: this.insightCounters,
+            day1FlowIntroShown: this.day1FlowIntroShown,
             
             // Mass balance (Fp, Fc)
             totalFoodPurchasedKg:  this.totalFoodPurchasedKg,
@@ -734,6 +761,7 @@ class Household {
             household.totalSpent = data.totalSpent;
             household.mealsCompleted = data.mealsCompleted;
             household.shoppingTrips = data.shoppingTrips;
+            household.happiness = data.happiness ?? 100;
             household.lastShoppingDay = data.lastShoppingDay || 0;
             household.lastFridgeDay   = data.lastFridgeDay   || 0;
             household.inedibleWasteWeight = data.inedibleWasteWeight || 0;
@@ -743,9 +771,10 @@ class Household {
             household.dailyHistory = data.dailyHistory || [];
             household.hiddenScore = data.hiddenScore || 0;
             household.decisionHistory = data.decisionHistory || [];
-            household.sessionDayLimit = data.sessionDayLimit || 14;
+            household.sessionDayLimit = data.sessionDayLimit || 7;
             household.sessionCompleted = !!data.sessionCompleted;
             household.insightCounters = data.insightCounters || household.insightCounters;
+            household.day1FlowIntroShown = !!data.day1FlowIntroShown;
             household.totalFoodPurchasedKg  = data.totalFoodPurchasedKg  || 0;
             household.totalFoodConsumedKg   = data.totalFoodConsumedKg   || 0;
             household.weeklyFoodPurchasedKg = data.weeklyFoodPurchasedKg || 0;

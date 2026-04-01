@@ -173,10 +173,33 @@ class Tutorial {
      * Introduce the Hydra Guide on first gameplay
      */
     introduceHydraGuide() {
+        const hydraGuide = new HydraGuide(this.scene);
+        const household = this.scene.household;
         const hasSeenHydra = localStorage.getItem('foodWasteSimulator_hydraIntroComplete');
-        
+
+        if (household && household.day === 1 && !household.day1FlowIntroShown) {
+            if (hydraGuide.shouldShow()) {
+                hydraGuide.introduceDayOneIdealFlow(() => {
+                    household.day1FlowIntroShown = true;
+                    if (typeof gameState !== 'undefined' && gameState.save) {
+                        gameState.save();
+                    }
+                });
+            } else {
+                household.day1FlowIntroShown = true;
+                if (typeof gameState !== 'undefined' && gameState.save) {
+                    gameState.save();
+                }
+            }
+            localStorage.setItem('foodWasteSimulator_hydraIntroComplete', 'true');
+            return;
+        }
+
+        if (!hydraGuide.shouldShow()) {
+            return;
+        }
+
         if (!hasSeenHydra && this.isActive) {
-            const hydraGuide = new HydraGuide(this.scene);
             hydraGuide.introduceSelf();
             localStorage.setItem('foodWasteSimulator_hydraIntroComplete', 'true');
         }

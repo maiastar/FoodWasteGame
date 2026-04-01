@@ -301,7 +301,7 @@ class PlanningMinigame extends Phaser.Scene {
         
         // Modern panel with shadow
         const panelWidth = 650;
-        const panelHeight = 580;
+        const panelHeight = 640;
         const panelX = width / 2 - panelWidth / 2;
         const panelY = height / 2 - panelHeight / 2;
         
@@ -368,34 +368,34 @@ class PlanningMinigame extends Phaser.Scene {
         
         // Recipe cards with enhanced styling
         const recipeStartY = panelY + 90;
-        const recipeSpacing = 62;
+        const recipeSpacing = 76;
         
-        availableRecipes.slice(0, 7).forEach((recipe, index) => {
+        availableRecipes.slice(0, 6).forEach((recipe, index) => {
             const y = recipeStartY + index * recipeSpacing;
             const cardContainer = this.add.container(panelX + 20, y);
             
             // Card shadow
-            const cardShadow = this.add.rectangle(2, 2, 610, 55, 0x000000, 0.1);
+            const cardShadow = this.add.rectangle(2, 2, 610, 72, 0x000000, 0.1);
             cardShadow.setOrigin(0, 0);
             
             // Card background
-            const cardBg = this.add.rectangle(0, 0, 610, 55, 0xffffff);
+            const cardBg = this.add.rectangle(0, 0, 610, 72, 0xffffff);
             cardBg.setStrokeStyle(2, 0xE0E0E0);
             cardBg.setOrigin(0, 0);
             cardBg.setInteractive({ useHandCursor: true });
             
             // Left accent
-            const accent = this.add.rectangle(0, 0, 5, 55, 0x9C27B0);
+            const accent = this.add.rectangle(0, 0, 5, 72, 0x9C27B0);
             accent.setOrigin(0, 0);
             
-            // Recipe icon with circular bg
-            const iconCircle = this.add.circle(35, 27, 20, 0xF3E5F5);
-            const recipeIcon = this.add.text(35, 27, recipe.icon, {
+            // Recipe icon with circular bg (centred in taller card)
+            const iconCircle = this.add.circle(35, 36, 20, 0xF3E5F5);
+            const recipeIcon = this.add.text(35, 36, recipe.icon, {
                 fontSize: '28px'
             }).setOrigin(0.5);
             
             // Recipe name
-            const recipeName = this.add.text(70, 18, recipe.name, {
+            const recipeName = this.add.text(70, 10, recipe.name, {
                 fontSize: '18px',
                 fontFamily: 'Fredoka, Arial',
                 color: '#333333',
@@ -403,20 +403,32 @@ class PlanningMinigame extends Phaser.Scene {
             }).setOrigin(0, 0);
             
             // Servings info
-            const servingsInfo = this.add.text(70, 36, `Serves ${recipe.servings} people`, {
+            const servingsInfo = this.add.text(70, 30, `Serves ${recipe.servings} people`, {
                 fontSize: '14px',
                 fontFamily: 'Fredoka, Arial',
                 color: '#666666'
             }).setOrigin(0, 0);
+
+            // Ingredient list
+            const ingredientStr = recipe.ingredients && recipe.ingredients.length
+                ? recipe.ingredients.map(i => i.name).join(', ')
+                : 'No ingredients listed';
+            const ingredientText = this.add.text(70, 49, ingredientStr, {
+                fontSize: '13px',
+                fontFamily: 'Fredoka, Arial',
+                color: '#888888',
+                fontStyle: 'italic',
+                wordWrap: { width: 490 }
+            }).setOrigin(0, 0);
             
             // Arrow indicator
-            const arrow = this.add.text(585, 27, '→', {
+            const arrow = this.add.text(585, 36, '→', {
                 fontSize: '24px',
                 color: '#9C27B0',
                 fontStyle: 'bold'
             }).setOrigin(1, 0.5);
             
-            cardContainer.add([cardShadow, cardBg, accent, iconCircle, recipeIcon, recipeName, servingsInfo, arrow]);
+            cardContainer.add([cardShadow, cardBg, accent, iconCircle, recipeIcon, recipeName, servingsInfo, ingredientText, arrow]);
             cardContainer.setDepth(5003);
             modalObjects.push(cardContainer);
             
@@ -440,8 +452,11 @@ class PlanningMinigame extends Phaser.Scene {
             });
         });
         
+        const numShown = Math.min(availableRecipes.length, 6);
+        const btnY = recipeStartY + numShown * recipeSpacing + 45;
+        
         // Clear button with enhanced styling
-        const clearBtn = this.add.container(width / 2 - 150, panelY + panelHeight - 45).setDepth(5004);
+        const clearBtn = this.add.container(width / 2 - 150, btnY).setDepth(5004);
         modalObjects.push(clearBtn);
         
         const clearBg = this.add.rectangle(0, 0, 200, 50, 0xFF9800);
@@ -474,7 +489,7 @@ class PlanningMinigame extends Phaser.Scene {
         });
         
         // Cancel button
-        const cancelBtn = this.add.container(width / 2 + 150, panelY + panelHeight - 45).setDepth(5004);
+        const cancelBtn = this.add.container(width / 2 + 150, btnY).setDepth(5004);
         modalObjects.push(cancelBtn);
         
         const cancelBg = this.add.rectangle(0, 0, 200, 50, 0x757575);

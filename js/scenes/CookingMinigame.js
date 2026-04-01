@@ -113,12 +113,6 @@ class CookingMinigame extends Phaser.Scene {
             recipesToShow = this.selectRandomRecipes(partialRecipes, 3);
         }
         
-        if (recipesToShow.length === 0) {
-            // Still no recipes (empty inventory)
-            this.showNoRecipesAvailable();
-            return;
-        }
-
         // Prepend "Reheat Leftovers" card if leftover food items are in inventory
         const leftoverItems = this.getLeftoverFoodItems();
         if (leftoverItems.length > 0) {
@@ -133,6 +127,12 @@ class CookingMinigame extends Phaser.Scene {
                 ingredients: [],
                 isLeftoverReheat: true
             });
+        }
+
+        if (recipesToShow.length === 0) {
+            // Still no recipes and no leftovers
+            this.showNoRecipesAvailable();
+            return;
         }
         
         // Display recipe cards
@@ -530,24 +530,22 @@ class CookingMinigame extends Phaser.Scene {
         ];
         
         portions.forEach((portion, index) => {
-            const btn = this.createPortionButton(
+            const portionContainer = this.createPortionButton(
                 selectorX + 60 + index * 160,
                 btnY,
                 portion.label,
                 portion.servings,
                 portion.multiplier === this.portionMultiplier
             );
-            
-            // Ensure button is clickable
-            btn.setDepth(1000);
-            
-            btn.on('pointerdown', () => {
+            portionContainer.setDepth(1000);
+            portionContainer.setData('portionMultiplier', portion.multiplier);
+
+            const bg = portionContainer.getData('bg');
+            bg.on('pointerdown', () => {
                 console.log(`🍽️ Portion selected: ${portion.label}`);
                 this.portionMultiplier = portion.multiplier;
                 this.refreshPortionButtons();
             });
-            
-            btn.setData('portionMultiplier', portion.multiplier);
         });
         
         // Recommendation
@@ -568,7 +566,11 @@ class CookingMinigame extends Phaser.Scene {
         const container = this.add.container(x, y);
         
         const bg = this.add.rectangle(0, 0, 140, 60, selected ? 0xFF9800 : 0xffffff);
-        bg.setStrokeStyle(3, selected ? 0xffffff : 0x333333);
+        if (selected) {
+            bg.setStrokeStyle(4, 0xE65100);
+        } else {
+            bg.setStrokeStyle(3, 0x333333);
+        }
         bg.setInteractive({ useHandCursor: true });
         
         const text = this.add.text(0, -5, label, {
@@ -589,17 +591,19 @@ class CookingMinigame extends Phaser.Scene {
         container.setData('text', text);
         container.setData('servingsText', servingsText);
         container.setData('portionButton', true);
-        container.setDepth(1000); // Ensure container is on top
+        container.setDepth(1000);
+        container.setScale(selected ? 1.06 : 1);
         
-        // Add hover effect
         bg.on('pointerover', () => {
-            container.setScale(1.05);
+            const isSel = container.getData('portionMultiplier') === this.portionMultiplier;
+            container.setScale(isSel ? 1.06 : 1.05);
         });
         bg.on('pointerout', () => {
-            container.setScale(1);
+            const isSel = container.getData('portionMultiplier') === this.portionMultiplier;
+            container.setScale(isSel ? 1.06 : 1);
         });
         
-        return bg;
+        return container;
     }
     
     /**
@@ -616,9 +620,14 @@ class CookingMinigame extends Phaser.Scene {
                 
                 if (bg && text && servingsText) {
                     bg.setFillStyle(isSelected ? 0xFF9800 : 0xffffff);
-                    bg.setStrokeStyle(3, isSelected ? 0xffffff : 0x333333);
+                    if (isSelected) {
+                        bg.setStrokeStyle(4, 0xE65100);
+                    } else {
+                        bg.setStrokeStyle(3, 0x333333);
+                    }
                     text.setColor(isSelected ? '#ffffff' : '#333333');
                     servingsText.setColor(isSelected ? '#ffffff' : '#666666');
+                    child.setScale(isSelected ? 1.06 : 1);
                 }
             }
         });

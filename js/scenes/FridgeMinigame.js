@@ -93,9 +93,6 @@ class FridgeMinigame extends Phaser.Scene {
         // Create done button
         this.createDoneButton();
         
-        // Instructions
-        this.showInstructions();
-        
         // Hydra guide advice
         this.time.delayedCall(500, () => {
             const hydraGuide = new HydraGuide(this);
@@ -132,9 +129,9 @@ class FridgeMinigame extends Phaser.Scene {
             padding: { x: 15, y: 8 }
         }).setOrigin(1, 0.5);
         exitBtn.setInteractive({ useHandCursor: true });
-        exitBtn.on('pointerdown', () => {
+        exitBtn.on('pointerup', () => {
             console.log('Exiting storage organization without saving...');
-            this.scene.start('ManagementScene');
+            this.time.delayedCall(0, () => this.scene.start('ManagementScene'));
         });
         exitBtn.on('pointerover', () => exitBtn.setStyle({ backgroundColor: '#B71C1C' }));
         exitBtn.on('pointerout', () => exitBtn.setStyle({ backgroundColor: '#D32F2F' }));
@@ -392,15 +389,27 @@ class FridgeMinigame extends Phaser.Scene {
         const panelBg = this.add.rectangle(fx + fw / 2, fy + fh / 2, fw, fh, 0xFFF8E1).setOrigin(0.5);
         group.add(panelBg);
 
-        // Cabinet image: crop out the empty black band at top and bottom (~7.5% each edge)
-        // so the cabinet itself is flush with the panel top and bottom edges.
+        // Cabinet image: full texture height (cropFraction 0). 1.0 = flush panel (no overscale).
+        // For more cream panelBg at edges, use 0.92–0.98 (e.g. 0.95). Mask only when scale > 1.
+        const pantryCabinetScale = 1.0;
         const cabinetImg = this.add.image(fx + fw / 2, fy + fh / 2, 'pantryCabinet');
         const src = this.textures.get('pantryCabinet').getSourceImage();
-        const cropFraction = 0.075;
+        const cropFraction = 0;
         const cropTop = Math.round(src.height * cropFraction);
-        const cropH   = src.height - cropTop * 2;
+        const cropH = src.height - cropTop * 2;
         cabinetImg.setCrop(0, cropTop, src.width, cropH);
         cabinetImg.setDisplaySize(fw, fh);
+        cabinetImg.setScale(pantryCabinetScale);
+
+        if (pantryCabinetScale > 1) {
+            const pantryMaskShape = this.make.graphics();
+            pantryMaskShape.fillStyle(0xffffff);
+            pantryMaskShape.fillRect(fx, fy, fw, fh);
+            const pantryMask = pantryMaskShape.createGeometryMask();
+            cabinetImg.setMask(pantryMask);
+            pantryMaskShape.setVisible(false);
+        }
+
         group.add(cabinetImg);
 
         // Drop zones align with the three inner shelf compartments.
@@ -589,7 +598,10 @@ class FridgeMinigame extends Phaser.Scene {
         const shadow = this.add.rectangle(3, 3, 380, 65, 0x000000, 0.12);
         shadow.setOrigin(0, 0);
         
-        const itemColor = parseInt(foodItem.color.replace('#', '0x'));
+        const rawColor = foodItem.color;
+        const itemColor = (typeof rawColor === 'string' && /^#[0-9A-Fa-f]{6}$/.test(rawColor))
+            ? parseInt(rawColor.slice(1), 16)
+            : 0x757575;
         const bg = this.add.rectangle(0, 0, 380, 65, 0xffffff);
         bg.setStrokeStyle(3, itemColor);
         bg.setOrigin(0, 0);
@@ -1115,8 +1127,11 @@ class FridgeMinigame extends Phaser.Scene {
      */
     createDoneButton() {
         const width  = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        const btnH   = 60;
+        const bottomPad = 16;
         const btnX   = width / 2;
-        const btnY   = 720;
+        const btnY   = height - bottomPad - btnH / 2;
         
         const button = this.add.container(btnX, btnY);
         
@@ -1136,20 +1151,6 @@ class FridgeMinigame extends Phaser.Scene {
         bg.on('pointerover', () => { bg.setFillStyle(0x66BB6A); button.setScale(1.05); });
         bg.on('pointerout',  () => { bg.setFillStyle(0x4CAF50); button.setScale(1); });
         bg.on('pointerdown', () => this.finishOrganizing());
-    }
-    
-    /**
-     * Show instructions
-     */
-    showInstructions() {
-        this.add.text(50, 700,
-            '💡 Select a tab, then drag items to the correct shelf! Items expire soonest appear first.', {
-            fontSize: '16px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#333333',
-            backgroundColor: '#ffffff',
-            padding: { x: 12, y: 6 }
-        }).setOrigin(0, 0);
     }
     
     /**
@@ -1322,15 +1323,15 @@ class FridgeMinigame extends Phaser.Scene {
         
         btnBg.on('pointerover', () => { continueBtn.setScale(1.05); btnBg.setFillStyle(0x66BB6A); });
         btnBg.on('pointerout',  () => { continueBtn.setScale(1);    btnBg.setFillStyle(0x4CAF50); });
-        btnBg.on('pointerdown', () => {
+        btnBg.on('pointerup', () => {
             const hydraGuide = new HydraGuide(this);
             if (hydraGuide.shouldShow()) {
                 hydraGuide.showFeedback('fridge-complete', {
                     score: score.score,
                     itemsOrganized: this.inventory.items.length
-                }, () => this.scene.start('ManagementScene'));
+                }, () => this.time.delayedCall(0, () => this.scene.start('ManagementScene')));
             } else {
-                this.scene.start('ManagementScene');
+                this.time.delayedCall(0, () => this.scene.start('ManagementScene'));
             }
         });
     }

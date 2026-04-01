@@ -30,7 +30,13 @@ class BootScene extends Phaser.Scene {
         this.load.image('hydraGuide', 'assets/sprites/Hydra Sprite.png');
 
         // Load pantry cabinet background
-        this.load.image('pantryCabinet', 'assets/sprites/pantry-cabinet.png');
+        this.load.image('pantryCabinet', 'assets/sprites/Open Pantry empty.png');
+
+        this.load.image('titleScreen', 'assets/sprites/Title screen.png');
+
+        this.load.image('homescreen', 'assets/sprites/Homescreen.png');
+
+        this.load.image('setupPageBg', 'assets/sprites/Household set up page.png');
         
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');
