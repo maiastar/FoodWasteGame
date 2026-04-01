@@ -28,6 +28,9 @@ class BootScene extends Phaser.Scene {
         
         // Load hydra guide sprite
         this.load.image('hydraGuide', 'assets/sprites/Hydra Sprite.png');
+
+        // Load pantry cabinet background
+        this.load.image('pantryCabinet', 'assets/sprites/pantry-cabinet.png');
         
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');
@@ -70,7 +73,7 @@ class BootScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         
         // Title
-        const title = this.add.text(width / 2, height / 2 - 100, '🍎 Food Smart Simulator', {
+        const title = this.add.text(width / 2, height / 2 - 100, '🍴 ForkCast', {
             fontSize: '48px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',

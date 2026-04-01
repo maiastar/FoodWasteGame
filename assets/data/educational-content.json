@@ -31,9 +31,9 @@
     "general": [
       "Americans waste 30-40% of the food supply - about 133 billion pounds per year!",
       "The average family of 4 wastes $1,500 worth of food annually.",
-      "Food waste in landfills produces methane, a potent greenhouse gas.",
+      "The freezer does not prevent food decay and spoilage.",
       "Small changes in habits can reduce household waste by 50%.",
-      "Understanding expiration labels: 'Best By' doesn't mean spoiled!"
+      "25%-30% of groceries bought by Americans is thrown out."
     ]
   },
   
@@ -64,7 +64,7 @@
   "tutorialSteps": [
     {
       "id": "welcome",
-      "title": "Welcome to Food Waste Simulator!",
+      "title": "Welcome to ForkCast!",
       "message": "Learn how to reduce food waste and save money while having fun!",
       "scene": "SetupScene"
     },
@@ -165,18 +165,18 @@
       "Some foods last a long time, others need to be eaten soon!"
     ],
     "9-12": [
-      "Americans throw away nearly 40% of their food supply.",
+      "25%-30% of groceries bought by Americans is thrown out.",
       "One family can waste over $1,500 of food each year.",
       "Proper storage can keep food fresh 3-5 days longer.",
       "Planning meals ahead can reduce waste by 30%.",
-      "Food waste creates methane gas which harms our planet."
+      "The freezer does not prevent food decay and spoilage."
     ],
     "13-15": [
       "The US wastes 133 billion pounds of food annually, worth $161 billion.",
       "Food waste is the single largest component of landfills (22%).",
-      "Wasted food generates 8-10% of global greenhouse gas emissions.",
+      "The freezer does not prevent food decay and spoilage.",
       "Understanding date labels: 'Best By' indicates quality, not safety.",
-      "Supply chain losses account for 30% of waste, but households contribute 43%.",
+      "25%-30% of groceries bought by Americans is thrown out.",
       "Composting and proper planning can reduce household waste by 50%."
     ]
   }

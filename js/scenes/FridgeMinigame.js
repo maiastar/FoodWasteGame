@@ -90,9 +90,6 @@ class FridgeMinigame extends Phaser.Scene {
         // Scroll buttons for the item panel
         this.createScrollButtons();
         
-        // Create timer
-        this.createTimer();
-        
         // Create done button
         this.createDoneButton();
         
@@ -109,9 +106,6 @@ class FridgeMinigame extends Phaser.Scene {
                 });
             }
         });
-        
-        // Start timer
-        this.startTimer();
     }
     
     /**
@@ -393,17 +387,40 @@ class FridgeMinigame extends Phaser.Scene {
     createPantryZones() {
         const group = this.add.container(0, 0);
         const fx = 50, fy = 110, fw = 700, fh = 580;
-        
-        const outline = this.add.rectangle(fx, fy, fw, fh, 0xFFF8E1).setOrigin(0, 0);
-        const border  = this.add.rectangle(fx, fy, fw, fh).setStrokeStyle(5, 0xF57F17).setOrigin(0, 0);
-        group.add([outline, border]);
-        
+
+        // Warm cream background fills the full panel so transparent/black edges blend cleanly
+        const panelBg = this.add.rectangle(fx + fw / 2, fy + fh / 2, fw, fh, 0xFFF8E1).setOrigin(0.5);
+        group.add(panelBg);
+
+        // Cabinet image: crop out the empty black band at top and bottom (~7.5% each edge)
+        // so the cabinet itself is flush with the panel top and bottom edges.
+        const cabinetImg = this.add.image(fx + fw / 2, fy + fh / 2, 'pantryCabinet');
+        const src = this.textures.get('pantryCabinet').getSourceImage();
+        const cropFraction = 0.075;
+        const cropTop = Math.round(src.height * cropFraction);
+        const cropH   = src.height - cropTop * 2;
+        cabinetImg.setCrop(0, cropTop, src.width, cropH);
+        cabinetImg.setDisplaySize(fw, fh);
+        group.add(cabinetImg);
+
+        // Drop zones align with the three inner shelf compartments.
+        // innerX/innerW match the interior space between the cabinet doors.
+        // y positions are recalculated for the cropped image (cabinet now fills full fh=580).
+        const innerX = fx + 145;
+        const innerW = 410;
+
         const zones = [
-            { name: 'Dry Goods',   description: 'Grains, Canned goods', y: fy + 20,  height: 260, color: 0xFFF9C4, acceptsCategories: ['grains', 'canned'] },
-            { name: 'Condiments',  description: 'Sauces, Spreads',      y: fy + 290, height: 260, color: 0xFFE0B2, acceptsCategories: ['condiments'] },
+            { name: 'Grains',      description: 'Cereals, Rice, Pasta',  y: fy + 5,   height: 193,
+              color: 0xffffff, bgAlpha: 0.08, acceptsCategories: ['grains'] },
+            { name: 'Canned Goods', description: 'Canned, Tinned items', y: fy + 208, height: 176,
+              color: 0xffffff, bgAlpha: 0.08, acceptsCategories: ['canned'] },
+            { name: 'Condiments',  description: 'Sauces, Spreads',        y: fy + 389, height: 182,
+              color: 0xffffff, bgAlpha: 0.08, acceptsCategories: ['condiments'] },
         ];
-        
-        zones.forEach(z => this.createStorageZone(fx, z.y, fw, z.height, z, group, this.pantryStorageZones));
+
+        zones.forEach(z =>
+            this.createStorageZone(innerX, z.y, innerW, z.height, z, group, this.pantryStorageZones)
+        );
         return group;
     }
     
@@ -415,11 +432,18 @@ class FridgeMinigame extends Phaser.Scene {
     createStorageZone(x, y, width, height, zoneData, group = null, zonesArray = null) {
         const zone = this.add.container(x, y);
         
-        const shadow = this.add.rectangle(3, 3, width, height, 0x000000, 0.1);
+        const shadowAlpha = (zoneData.bgAlpha !== undefined && zoneData.bgAlpha < 0.5) ? 0 : 0.1;
+        const shadow = this.add.rectangle(3, 3, width, height, 0x000000, shadowAlpha);
         shadow.setOrigin(0, 0);
         
-        const bg = this.add.rectangle(0, 0, width, height, zoneData.color, 0.85);
-        bg.setStrokeStyle(3, 0x333333);
+        const bgAlpha = zoneData.bgAlpha !== undefined ? zoneData.bgAlpha : 0.85;
+        const bg = this.add.rectangle(0, 0, width, height, zoneData.color, bgAlpha);
+        if (bgAlpha >= 0.5) {
+            bg.setStrokeStyle(3, 0x333333);
+        } else {
+            // Subtle dashed-style border for transparent pantry zones
+            bg.setStrokeStyle(2, 0x999999, 0.4);
+        }
         bg.setOrigin(0, 0);
         
         const zoneIcons = {
@@ -430,6 +454,8 @@ class FridgeMinigame extends Phaser.Scene {
             'Raw Meat & Fish': '🥩',
             'Dry Goods': '🌾',
             'Condiments': '🧂',
+            'Grains': '🌾',
+            'Canned Goods': '🥫',
         };
         const zoneIcon = zoneIcons[zoneData.name] || '📦';
         
@@ -750,7 +776,7 @@ class FridgeMinigame extends Phaser.Scene {
         const locationMap = {
             'fridge':  ['Top Shelf', 'Middle Shelf', 'Crisper Drawer'],
             'freezer': ['Frozen Goods', 'Raw Meat & Fish'],
-            'pantry':  ['Dry Goods', 'Condiments'],
+            'pantry':  ['Dry Goods', 'Condiments', 'Grains', 'Canned Goods'],
         };
         let targetLocation = 'fridge';
         for (const [loc, zoneNames] of Object.entries(locationMap)) {

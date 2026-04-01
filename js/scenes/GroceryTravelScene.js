@@ -70,7 +70,7 @@ class GroceryTravelScene extends Phaser.Scene {
         this.tweens.add({
             targets: car,
             x: goingToStore ? width + 120 : -120,
-            duration: 3000,
+            duration: 5000,
             ease: 'Sine.easeInOut'
         });
         
@@ -89,7 +89,7 @@ class GroceryTravelScene extends Phaser.Scene {
             repeat: -1
         });
         
-        this.time.delayedCall(3200, () => {
+        this.time.delayedCall(5200, () => {
             this.scene.start(this.nextScene);
         });
     }

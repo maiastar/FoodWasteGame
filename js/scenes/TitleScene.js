@@ -23,7 +23,7 @@ class TitleScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Game title
-        this.add.text(width / 2, 210, 'Food Smart Simulator', {
+        this.add.text(width / 2, 210, 'ForkCast', {
             fontSize: '72px',
             fontFamily: 'Fredoka, Arial',
             color: '#2E7D32',
@@ -70,7 +70,7 @@ class TitleScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Version / credit line
-        this.add.text(width / 2, height - 30, 'Food Smart Simulator  •  Educational Food Waste Game', {
+        this.add.text(width / 2, height - 30, 'ForkCast  •  Educational Food Waste Game', {
             fontSize: '14px',
             fontFamily: 'Fredoka, Arial',
             color: '#AAAAAA'
