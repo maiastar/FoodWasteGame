@@ -590,7 +590,12 @@ class ManagementScene extends Phaser.Scene {
             fridgeBadge
         );
         this.configureDay1ActionButton(fridgeBtn, 0x2196F3, fridgeEnabled, 'day1-need-shop', () => {
-            this.time.delayedCall(0, () => this.scene.start('FridgeMinigame'));
+            this.time.delayedCall(0, () => {
+                // #region agent log
+                fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'ManagementScene.js:fridgeBtn',message:'Starting FridgeMinigame',data:{day:this.household?.day,fridgeEnabled,day1Sequenced:this.isDay1Sequenced()},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+                // #endregion
+                this.scene.start('FridgeMinigame');
+            });
         });
         
         // Planning button (aligned with others)

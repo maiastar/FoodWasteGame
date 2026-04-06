@@ -441,9 +441,19 @@ class FoodItem {
         item.id = json.id;
         item.dayAge = json.dayAge || 0;
         item.qualityValue = json.qualityValue !== undefined ? json.qualityValue : 100;
+        if (typeof item.qualityValue !== 'number' || !Number.isFinite(item.qualityValue)) {
+            item.qualityValue = 100;
+        }
         item.freshness = json.freshness !== undefined ? json.freshness : item.daysUntilSpoilage;
-        item.quantity = json.quantity;
-        item.originalQuantity = json.originalQuantity || json.quantity;
+        if (typeof item.freshness !== 'number' || !Number.isFinite(item.freshness)) {
+            item.freshness = item.daysUntilSpoilage;
+        }
+        if (json.quantity !== undefined && json.quantity !== null) {
+            item.quantity = json.quantity;
+        }
+        item.originalQuantity = json.originalQuantity != null
+            ? json.originalQuantity
+            : (json.quantity != null ? json.quantity : item.originalQuantity);
         item.isProperlyStored = json.isProperlyStored !== undefined ? json.isProperlyStored : true;
         item.zoneName = json.zoneName || null;
         return item;

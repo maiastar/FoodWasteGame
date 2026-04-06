@@ -49,14 +49,31 @@ class FridgeMinigame extends Phaser.Scene {
         this.tabButtons = {};
         this.activeTab = 'fridge';
         this.scrollIndexes = { fridge: 0, freezer: 0, pantry: 0 };
+        // Clear handles to GameObjects from a previous run (scene instance is reused).
+        // restoreZonePlacements() calls updateItemListLayout before createScrollButtons();
+        // stale scrollUpBtn/scrollDownBtn would point at destroyed Text → setColor → null 'cut'.
+        this.scrollUpBtn = null;
+        this.scrollDownBtn = null;
+        this.scrollPageLabel = null;
+        this.progressLabel = null;
+        this.progressBar = null;
+        this.progressText = null;
+        this.timerGauge = null;
+        this.timerIcon = null;
         
         this.household = gameState.household;
         this.inventory = gameState.inventory;
         this.timeRemaining = this.timeLimit;
+
+        // #region agent log
+        const _t0 = performance.now();
+        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:entry',message:'create entry',data:{day:this.household?.day,invItems:this.inventory?.items?.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
-        
+
+        try {
         // Background
         this.add.rectangle(0, 0, width, height, 0xE1F5FE).setOrigin(0, 0);
         
@@ -65,6 +82,10 @@ class FridgeMinigame extends Phaser.Scene {
         
         // Create zone groups (fridge/freezer/pantry panels)
         this.createFridgeLayout();
+
+        // #region agent log
+        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:postLayout',message:'after createFridgeLayout',data:{ms:Math.round(performance.now()-_t0),hasPantryTex:this.textures.exists('pantryCabinet')},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         
         // Tab bar above the storage panel
         this.createTabBar();
@@ -76,6 +97,10 @@ class FridgeMinigame extends Phaser.Scene {
         this.fridgeItemGroup  = this.createFoodItems('fridge');
         this.freezerItemGroup = this.createFoodItems('freezer');
         this.pantryItemGroup  = this.createFoodItems('pantry');
+
+        // #region agent log
+        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:postItems',message:'after createFoodItems',data:{itemContainers:this.itemContainers.length,ms:Math.round(performance.now()-_t0),totalItemsZero:this.itemContainers.length===0},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
         
         // Initially show fridge items only
         this.freezerItemGroup.setVisible(false);
@@ -83,18 +108,37 @@ class FridgeMinigame extends Phaser.Scene {
 
         // Restore any zone placements from a previous visit
         this.restoreZonePlacements();
+
+        // #region agent log
+        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:postRestore',message:'after restoreZonePlacements',data:{ms:Math.round(performance.now()-_t0)},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
+        // #endregion
         
         // Progress tracker (uses this.itemContainers which now holds all tabs)
         this.createProgressTracker();
 
         // Scroll buttons for the item panel
         this.createScrollButtons();
-        
+        this.updateItemListLayout(this.activeTab);
+
         // Create done button
         this.createDoneButton();
+
+        // #region agent log
+        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:syncComplete',message:'create sync complete before Hydra delay',data:{ms:Math.round(performance.now()-_t0),itemContainers:this.itemContainers.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.tweens) this.tweens.killAll();
+        });
+
         // Hydra guide advice
         this.time.delayedCall(500, () => {
+            // #region agent log
+            fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:hydraDelay',message:'Hydra fridge-entry callback',data:{shouldShow:new HydraGuide(this).shouldShow()},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
+            // #endregion
             const hydraGuide = new HydraGuide(this);
             if (hydraGuide.shouldShow()) {
                 hydraGuide.showDecisionAdvice('fridge-entry', {
@@ -103,6 +147,21 @@ class FridgeMinigame extends Phaser.Scene {
                 });
             }
         });
+        } catch (err) {
+            // #region agent log
+            const payload = { sessionId: '6e016e', location: 'FridgeMinigame.js:create:catch', message: String(err && err.message), data: { stack: String(err && err.stack).slice(0, 2500), name: err && err.name }, timestamp: Date.now(), hypothesisId: 'H6' };
+            console.error('[FridgeMinigame create]', err);
+            fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6e016e' }, body: JSON.stringify(payload) }).catch(() => {});
+            // #endregion
+            this.add.rectangle(0, 0, width, height, 0xE1F5FE).setOrigin(0, 0);
+            this.add.text(width / 2, height / 2, 'Could not load Organize Fridge.\n\n' + (err && err.message ? err.message : String(err)), {
+                fontSize: '18px', fontFamily: 'Fredoka, Arial', color: '#B71C1C', align: 'center', wordWrap: { width: width - 80 }
+            }).setOrigin(0.5);
+            const back = this.add.text(width / 2, height / 2 + 120, 'Tap to return to dashboard', {
+                fontSize: '22px', fontFamily: 'Fredoka, Arial', color: '#1565C0', backgroundColor: '#ffffff', padding: { x: 16, y: 10 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            back.on('pointerup', () => this.scene.start('ManagementScene'));
+        }
     }
     
     /**
@@ -389,28 +448,32 @@ class FridgeMinigame extends Phaser.Scene {
         const panelBg = this.add.rectangle(fx + fw / 2, fy + fh / 2, fw, fh, 0xFFF8E1).setOrigin(0.5);
         group.add(panelBg);
 
-        // Cabinet image: full texture height (cropFraction 0). 1.0 = flush panel (no overscale).
-        // For more cream panelBg at edges, use 0.92–0.98 (e.g. 0.95). Mask only when scale > 1.
+        // Cabinet image (skip if texture/source missing — avoids thrown errors halting create())
         const pantryCabinetScale = 1.0;
-        const cabinetImg = this.add.image(fx + fw / 2, fy + fh / 2, 'pantryCabinet');
-        const src = this.textures.get('pantryCabinet').getSourceImage();
-        const cropFraction = 0;
-        const cropTop = Math.round(src.height * cropFraction);
-        const cropH = src.height - cropTop * 2;
-        cabinetImg.setCrop(0, cropTop, src.width, cropH);
-        cabinetImg.setDisplaySize(fw, fh);
-        cabinetImg.setScale(pantryCabinetScale);
+        if (this.textures.exists('pantryCabinet')) {
+            const tex = this.textures.get('pantryCabinet');
+            const src = tex && tex.getSourceImage ? tex.getSourceImage() : null;
+            if (src && src.width > 0 && src.height > 0) {
+                const cabinetImg = this.add.image(fx + fw / 2, fy + fh / 2, 'pantryCabinet');
+                const cropFraction = 0;
+                const cropTop = Math.round(src.height * cropFraction);
+                const cropH = src.height - cropTop * 2;
+                cabinetImg.setCrop(0, cropTop, src.width, cropH);
+                cabinetImg.setDisplaySize(fw, fh);
+                cabinetImg.setScale(pantryCabinetScale);
 
-        if (pantryCabinetScale > 1) {
-            const pantryMaskShape = this.make.graphics();
-            pantryMaskShape.fillStyle(0xffffff);
-            pantryMaskShape.fillRect(fx, fy, fw, fh);
-            const pantryMask = pantryMaskShape.createGeometryMask();
-            cabinetImg.setMask(pantryMask);
-            pantryMaskShape.setVisible(false);
+                if (pantryCabinetScale > 1) {
+                    const pantryMaskShape = this.make.graphics();
+                    pantryMaskShape.fillStyle(0xffffff);
+                    pantryMaskShape.fillRect(fx, fy, fw, fh);
+                    const pantryMask = pantryMaskShape.createGeometryMask();
+                    cabinetImg.setMask(pantryMask);
+                    pantryMaskShape.setVisible(false);
+                }
+
+                group.add(cabinetImg);
+            }
         }
-
-        group.add(cabinetImg);
 
         // Drop zones align with the three inner shelf compartments.
         // innerX/innerW match the interior space between the cabinet doors.
@@ -633,8 +696,10 @@ class FridgeMinigame extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0, 0);
         
-        const freshnessPercentage = foodItem.getFreshnessPercentage();
-        const daysLeft = foodItem.freshness.toFixed(1);
+        const rawPct = foodItem.getFreshnessPercentage();
+        const freshnessPercentage = Number.isFinite(rawPct) ? rawPct : 0;
+        const daysNum = Number(foodItem.freshness);
+        const daysLeft = Number.isFinite(daysNum) ? daysNum.toFixed(1) : '?';
         
         const barWidth = 100, barHeight = 8, barX = 68, barY = 45;
         
@@ -663,7 +728,7 @@ class FridgeMinigame extends Phaser.Scene {
         const qtyBadge = this.add.circle(360, 32, 16, 0x2196F3);
         qtyBadge.setStrokeStyle(2, 0xffffff);
         
-        const qtyText = this.add.text(360, 32, foodItem.quantity.toString(), {
+        const qtyText = this.add.text(360, 32, String(foodItem.quantity != null ? foodItem.quantity : 0), {
             fontSize: '16px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',
@@ -690,6 +755,7 @@ class FridgeMinigame extends Phaser.Scene {
         this.input.setDraggable(bg);
         
         bg.on('dragstart', (pointer) => {
+            container.setData('dragging', true);
             container.setData('dragOffsetX', pointer.x - container.x);
             container.setData('dragOffsetY', pointer.y - container.y);
             
@@ -701,7 +767,8 @@ class FridgeMinigame extends Phaser.Scene {
             // Highlight compatible zones in the ACTIVE tab only
             this.storageZones.forEach(zone => {
                 const zoneData = zone.getData('zoneData');
-                if (zoneData.acceptsCategories.includes(foodItem.category)) {
+                const cats = zoneData && zoneData.acceptsCategories;
+                if (Array.isArray(cats) && cats.includes(foodItem.category)) {
                     const zoneBg = zone.getData('bg');
                     if (zoneBg) {
                         zoneBg.setStrokeStyle(5, 0x4CAF50);
@@ -719,6 +786,7 @@ class FridgeMinigame extends Phaser.Scene {
         });
         
         bg.on('dragend', () => {
+            container.setData('dragging', false);
             container.setScale(1);
             container.setDepth(0);
             bg.setStrokeStyle(3, itemColor);
@@ -751,10 +819,10 @@ class FridgeMinigame extends Phaser.Scene {
         });
         
         bg.on('pointerover', () => {
-            if (!this.input.dragState) container.setScale(1.03);
+            if (!container.getData('dragging')) container.setScale(1.03);
         });
         bg.on('pointerout', () => {
-            if (!this.input.dragState) container.setScale(1);
+            if (!container.getData('dragging')) container.setScale(1);
         });
     }
     
@@ -781,8 +849,8 @@ class FridgeMinigame extends Phaser.Scene {
     placeItemInZone(itemContainer, zone) {
         const foodItem = itemContainer.getData('foodItem');
         const zoneData = zone.getData('zoneData');
-        
-        const isCorrect = zoneData.acceptsCategories.includes(foodItem.category);
+        const cats = zoneData && zoneData.acceptsCategories;
+        const isCorrect = Array.isArray(cats) && cats.includes(foodItem.category);
         
         // Map zone to storage location and update the food item's decay model
         const locationMap = {
@@ -976,6 +1044,7 @@ class FridgeMinigame extends Phaser.Scene {
         else                        fillColor = 0x4CAF50;
         
         const fill = this.progressBar.getData('fill');
+        if (!fill || typeof fillWidth !== 'number' || Number.isNaN(fillWidth)) return;
         
         this.tweens.add({
             targets: fill,
@@ -1353,7 +1422,8 @@ class FridgeMinigame extends Phaser.Scene {
         const bg         = this.add.rectangle(0, 0, width, height, 0xe0e0e0);
         bg.setOrigin(0, 0.5);
         
-        const percentage = Math.max(0, Math.min(1, value / maxValue));
+        const safeMax = (typeof maxValue === 'number' && maxValue > 0) ? maxValue : 1;
+        const percentage = Math.max(0, Math.min(1, value / safeMax));
         const fillWidth  = width * percentage;
         
         let fillColor;
@@ -1375,7 +1445,8 @@ class FridgeMinigame extends Phaser.Scene {
     
     createCircularGauge(x, y, radius, value, maxValue, label = '') {
         const container  = this.add.container(x, y);
-        const percentage = Math.max(0, Math.min(1, value / maxValue));
+        const safeMax = (typeof maxValue === 'number' && maxValue > 0) ? maxValue : 1;
+        const percentage = Math.max(0, Math.min(1, value / safeMax));
         const angle      = percentage * 270;
         
         let arcColor;
