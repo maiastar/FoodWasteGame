@@ -76,6 +76,31 @@ class ManagementScene extends Phaser.Scene {
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(1, 0.5);
+
+        // Static minigame reference (all days); separate from Hydra contextual popups
+        const gap = 14;
+        const iconDisplay = 52;
+        const radius = iconDisplay / 2;
+        const iconX = this.dayCounter.x - this.dayCounter.width - gap - iconDisplay / 2;
+        const guideBtn = this.add.container(iconX, 40);
+        const guideCircle = this.add.circle(0, 0, radius, 0xffffff, 0.95);
+        guideCircle.setStrokeStyle(2, 0x1565c0);
+        const guideMark = this.add.text(0, 0, '?', {
+            fontSize: '28px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#1565C0',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        guideBtn.add([guideCircle, guideMark]);
+        guideBtn.setDepth(1);
+        guideBtn.setInteractive({
+            hitArea: new Phaser.Geom.Circle(0, 0, radius),
+            hitAreaCallback: Phaser.Geom.Circle.Contains,
+            useHandCursor: true
+        });
+        guideBtn.on('pointerup', () => {
+            new StaticMinigameGuide(this).show();
+        });
     }
     
     /**
@@ -590,12 +615,7 @@ class ManagementScene extends Phaser.Scene {
             fridgeBadge
         );
         this.configureDay1ActionButton(fridgeBtn, 0x2196F3, fridgeEnabled, 'day1-need-shop', () => {
-            this.time.delayedCall(0, () => {
-                // #region agent log
-                fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'ManagementScene.js:fridgeBtn',message:'Starting FridgeMinigame',data:{day:this.household?.day,fridgeEnabled,day1Sequenced:this.isDay1Sequenced()},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-                // #endregion
-                this.scene.start('FridgeMinigame');
-            });
+            this.time.delayedCall(0, () => this.scene.start('FridgeMinigame'));
         });
         
         // Planning button (aligned with others)

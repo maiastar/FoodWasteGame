@@ -65,11 +65,6 @@ class FridgeMinigame extends Phaser.Scene {
         this.inventory = gameState.inventory;
         this.timeRemaining = this.timeLimit;
 
-        // #region agent log
-        const _t0 = performance.now();
-        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:entry',message:'create entry',data:{day:this.household?.day,invItems:this.inventory?.items?.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-        // #endregion
-        
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
@@ -83,10 +78,6 @@ class FridgeMinigame extends Phaser.Scene {
         // Create zone groups (fridge/freezer/pantry panels)
         this.createFridgeLayout();
 
-        // #region agent log
-        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:postLayout',message:'after createFridgeLayout',data:{ms:Math.round(performance.now()-_t0),hasPantryTex:this.textures.exists('pantryCabinet')},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-        // #endregion
-        
         // Tab bar above the storage panel
         this.createTabBar();
         
@@ -98,10 +89,6 @@ class FridgeMinigame extends Phaser.Scene {
         this.freezerItemGroup = this.createFoodItems('freezer');
         this.pantryItemGroup  = this.createFoodItems('pantry');
 
-        // #region agent log
-        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:postItems',message:'after createFoodItems',data:{itemContainers:this.itemContainers.length,ms:Math.round(performance.now()-_t0),totalItemsZero:this.itemContainers.length===0},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-        // #endregion
-        
         // Initially show fridge items only
         this.freezerItemGroup.setVisible(false);
         this.pantryItemGroup.setVisible(false);
@@ -109,10 +96,6 @@ class FridgeMinigame extends Phaser.Scene {
         // Restore any zone placements from a previous visit
         this.restoreZonePlacements();
 
-        // #region agent log
-        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:postRestore',message:'after restoreZonePlacements',data:{ms:Math.round(performance.now()-_t0)},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
-        // #endregion
-        
         // Progress tracker (uses this.itemContainers which now holds all tabs)
         this.createProgressTracker();
 
@@ -123,10 +106,6 @@ class FridgeMinigame extends Phaser.Scene {
         // Create done button
         this.createDoneButton();
 
-        // #region agent log
-        fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:create:syncComplete',message:'create sync complete before Hydra delay',data:{ms:Math.round(performance.now()-_t0),itemContainers:this.itemContainers.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-        // #endregion
-        
         const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
             ? Phaser.Scenes.Events.SHUTDOWN
             : 'shutdown';
@@ -136,9 +115,6 @@ class FridgeMinigame extends Phaser.Scene {
 
         // Hydra guide advice
         this.time.delayedCall(500, () => {
-            // #region agent log
-            fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e016e'},body:JSON.stringify({sessionId:'6e016e',location:'FridgeMinigame.js:hydraDelay',message:'Hydra fridge-entry callback',data:{shouldShow:new HydraGuide(this).shouldShow()},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
-            // #endregion
             const hydraGuide = new HydraGuide(this);
             if (hydraGuide.shouldShow()) {
                 hydraGuide.showDecisionAdvice('fridge-entry', {
@@ -148,11 +124,7 @@ class FridgeMinigame extends Phaser.Scene {
             }
         });
         } catch (err) {
-            // #region agent log
-            const payload = { sessionId: '6e016e', location: 'FridgeMinigame.js:create:catch', message: String(err && err.message), data: { stack: String(err && err.stack).slice(0, 2500), name: err && err.name }, timestamp: Date.now(), hypothesisId: 'H6' };
             console.error('[FridgeMinigame create]', err);
-            fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6e016e' }, body: JSON.stringify(payload) }).catch(() => {});
-            // #endregion
             this.add.rectangle(0, 0, width, height, 0xE1F5FE).setOrigin(0, 0);
             this.add.text(width / 2, height / 2, 'Could not load Organize Fridge.\n\n' + (err && err.message ? err.message : String(err)), {
                 fontSize: '18px', fontFamily: 'Fredoka, Arial', color: '#B71C1C', align: 'center', wordWrap: { width: width - 80 }
