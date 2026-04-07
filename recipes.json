@@ -1,0 +1,230 @@
+{
+  "recipes": [
+    {
+      "id": "pasta-tomato",
+      "name": "Pasta with Tomato Sauce",
+      "difficulty": "easy",
+      "cookTime": 20,
+      "servings": 4,
+      "ingredients": [
+        { "name": "Pasta", "quantity": 2 },
+        { "name": "Tomato", "quantity": 2 },
+        { "name": "Onion", "quantity": 1 }
+      ],
+      "category": "dinner",
+      "wasteReductionTip": "Use any vegetables close to expiration in pasta sauce!",
+      "icon": "🍝"
+    },
+    {
+      "id": "scrambled-eggs",
+      "name": "Scrambled Eggs",
+      "difficulty": "easy",
+      "cookTime": 10,
+      "servings": 2,
+      "ingredients": [
+        { "name": "Eggs", "quantity": 2 },
+        { "name": "Milk", "quantity": 1 }
+      ],
+      "category": "breakfast",
+      "wasteReductionTip": "Eggs last 3-5 weeks past their carton date if refrigerated!",
+      "icon": "🍳"
+    },
+    {
+      "id": "grilled-chicken",
+      "name": "Grilled Chicken with Veggies",
+      "difficulty": "medium",
+      "cookTime": 30,
+      "servings": 4,
+      "ingredients": [
+        { "name": "Chicken Breast", "quantity": 1 },
+        { "name": "Broccoli", "quantity": 1 },
+        { "name": "Carrot", "quantity": 1 }
+      ],
+      "category": "dinner",
+      "wasteReductionTip": "Use chicken within 2 days or freeze it immediately!",
+      "icon": "🍗"
+    },
+    {
+      "id": "veggie-stir-fry",
+      "name": "Vegetable Stir Fry",
+      "difficulty": "easy",
+      "cookTime": 15,
+      "servings": 3,
+      "ingredients": [
+        { "name": "Rice", "quantity": 2 },
+        { "name": "Broccoli", "quantity": 1 },
+        { "name": "Carrot", "quantity": 1 },
+        { "name": "Onion", "quantity": 1 }
+      ],
+      "category": "dinner",
+      "wasteReductionTip": "Stir fry is perfect for using up vegetables before they spoil!",
+      "icon": "🥘"
+    },
+    {
+      "id": "simple-salad",
+      "name": "Simple Garden Salad",
+      "difficulty": "easy",
+      "cookTime": 5,
+      "servings": 2,
+      "ingredients": [
+        { "name": "Lettuce", "quantity": 1 },
+        { "name": "Tomato", "quantity": 1 },
+        { "name": "Carrot", "quantity": 1 }
+      ],
+      "category": "lunch",
+      "wasteReductionTip": "Wash lettuce just before eating - stays fresh longer!",
+      "icon": "🥗"
+    },
+    {
+      "id": "fish-dinner",
+      "name": "Baked Fish Dinner",
+      "difficulty": "medium",
+      "cookTime": 25,
+      "servings": 3,
+      "ingredients": [
+        { "name": "Salmon", "quantity": 1 },
+        { "name": "Potato", "quantity": 1 },
+        { "name": "Broccoli", "quantity": 1 }
+      ],
+      "category": "dinner",
+      "wasteReductionTip": "Fish must be cooked within 1 day of purchase!",
+      "icon": "🐟"
+    },
+    {
+      "id": "rice-bowl",
+      "name": "Rice and Beans Bowl",
+      "difficulty": "easy",
+      "cookTime": 15,
+      "servings": 4,
+      "ingredients": [
+        { "name": "Rice", "quantity": 2 },
+        { "name": "Canned Beans", "quantity": 1 },
+        { "name": "Onion", "quantity": 1 }
+      ],
+      "category": "lunch",
+      "wasteReductionTip": "Combine shelf-stable and fresh ingredients for balanced meals!",
+      "icon": "🍚"
+    },
+    {
+      "id": "yogurt-parfait",
+      "name": "Yogurt Parfait",
+      "difficulty": "easy",
+      "cookTime": 5,
+      "servings": 1,
+      "ingredients": [
+        { "name": "Yogurt", "quantity": 1 },
+        { "name": "Strawberries", "quantity": 1 },
+        { "name": "Banana", "quantity": 1 }
+      ],
+      "category": "breakfast",
+      "wasteReductionTip": "Use slightly overripe fruit - perfect for parfaits!",
+      "icon": "🍨"
+    },
+    {
+      "id": "french-toast",
+      "name": "French Toast",
+      "difficulty": "easy",
+      "cookTime": 15,
+      "servings": 2,
+      "ingredients": [
+        { "name": "Bread", "quantity": 2 },
+        { "name": "Eggs", "quantity": 2 },
+        { "name": "Milk", "quantity": 1 }
+      ],
+      "category": "breakfast",
+      "wasteReductionTip": "Stale bread makes the best French toast - never throw it out!",
+      "icon": "🍞"
+    },
+    {
+      "id": "spinach-omelette",
+      "name": "Spinach & Cheese Omelette",
+      "difficulty": "easy",
+      "cookTime": 10,
+      "servings": 2,
+      "ingredients": [
+        { "name": "Eggs", "quantity": 2 },
+        { "name": "Spinach", "quantity": 1 },
+        { "name": "Cheese", "quantity": 1 }
+      ],
+      "category": "breakfast",
+      "wasteReductionTip": "Spinach wilts fast - use it in omelettes before it goes bad!",
+      "icon": "🥚"
+    },
+    {
+      "id": "morning-smoothie",
+      "name": "Morning Fruit Smoothie",
+      "difficulty": "easy",
+      "cookTime": 5,
+      "servings": 2,
+      "ingredients": [
+        { "name": "Apple", "quantity": 1 },
+        { "name": "Banana", "quantity": 1 },
+        { "name": "Orange Juice", "quantity": 1 }
+      ],
+      "category": "breakfast",
+      "wasteReductionTip": "Overripe fruit is sweeter - blend it into smoothies instead of tossing it!",
+      "icon": "🥤"
+    },
+    {
+      "id": "grilled-cheese",
+      "name": "Grilled Cheese Sandwich",
+      "difficulty": "easy",
+      "cookTime": 10,
+      "servings": 2,
+      "ingredients": [
+        { "name": "Bread", "quantity": 2 },
+        { "name": "Cheese", "quantity": 1 }
+      ],
+      "category": "lunch",
+      "wasteReductionTip": "Cheese nearing its date melts perfectly in a grilled cheese!",
+      "icon": "🥪"
+    },
+    {
+      "id": "beef-tacos",
+      "name": "Ground Beef Tacos",
+      "difficulty": "medium",
+      "cookTime": 20,
+      "servings": 4,
+      "ingredients": [
+        { "name": "Ground Beef", "quantity": 1 },
+        { "name": "Tomato", "quantity": 1 },
+        { "name": "Cheese", "quantity": 1 }
+      ],
+      "category": "lunch",
+      "wasteReductionTip": "Ground beef spoils fast - cook it the same day you buy it!",
+      "icon": "🌮"
+    },
+    {
+      "id": "beef-fried-rice",
+      "name": "Beef Fried Rice",
+      "difficulty": "medium",
+      "cookTime": 25,
+      "servings": 4,
+      "ingredients": [
+        { "name": "Ground Beef", "quantity": 1 },
+        { "name": "Rice", "quantity": 2 },
+        { "name": "Frozen Peas", "quantity": 1 },
+        { "name": "Onion", "quantity": 1 }
+      ],
+      "category": "dinner",
+      "wasteReductionTip": "Frozen peas go straight from freezer to pan - zero waste!",
+      "icon": "🍳"
+    },
+    {
+      "id": "cheesy-veggie-pasta",
+      "name": "Cheesy Spinach Pasta",
+      "difficulty": "easy",
+      "cookTime": 20,
+      "servings": 3,
+      "ingredients": [
+        { "name": "Pasta", "quantity": 2 },
+        { "name": "Spinach", "quantity": 1 },
+        { "name": "Cheese", "quantity": 1 },
+        { "name": "Tomato", "quantity": 1 }
+      ],
+      "category": "dinner",
+      "wasteReductionTip": "Wilting spinach is perfect for pasta - heat revives the flavor!",
+      "icon": "🍝"
+    }
+  ]
+}
