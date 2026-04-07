@@ -96,7 +96,7 @@ class PlanningMinigame extends Phaser.Scene {
             this.planningMusic = this.sound.add('planningCookingMusic', { loop: true, volume: 0.4 });
             this.planningMusic.play();
             if (typeof wireBgmAfterAutoplayPolicy === 'function') {
-                wireBgmAfterAutoplayPolicy(this, () => this.planningMusic, 'PlanningMinigame');
+                wireBgmAfterAutoplayPolicy(this, () => this.planningMusic);
             }
         }
 

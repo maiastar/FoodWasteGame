@@ -34,6 +34,9 @@ class BootScene extends Phaser.Scene {
         this.load.image('titleScreen', sprite('Updated Title screen.png'));
         this.load.image('homescreen', sprite('Homescreen.png'));
         this.load.image('setupPageBg', sprite('Household set up page.png'));
+        this.load.image('travelRoad', sprite('Road.png'));
+        this.load.image('travelCar', sprite('Car.png'));
+        this.load.image('travelCloud', sprite('cloud.png'));
 
         this.load.audio('planningCookingMusic', 'assets/audio/delosound-cooking-food-music-447269.mp3');
         this.load.audio('homescreenSynthwaveMusic', 'assets/audio/tunetank-dreamy-synthwave-music-347512.mp3');

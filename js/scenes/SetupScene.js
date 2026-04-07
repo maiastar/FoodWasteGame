@@ -64,7 +64,7 @@ class SetupScene extends Phaser.Scene {
             this.titleSetupBgm = this.sound.add('titleSetupBgm', { loop: true, volume: 0.35 });
             this.titleSetupBgm.play();
             if (typeof wireBgmAfterAutoplayPolicy === 'function') {
-                wireBgmAfterAutoplayPolicy(this, () => this.titleSetupBgm, 'SetupScene');
+                wireBgmAfterAutoplayPolicy(this, () => this.titleSetupBgm);
             }
         }
         const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)

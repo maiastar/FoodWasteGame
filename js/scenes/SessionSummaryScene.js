@@ -252,7 +252,7 @@ class SessionSummaryScene extends Phaser.Scene {
             this.sessionSummaryBgm = this.sound.add('sessionSummaryBgm', { loop: true, volume: 0.35 });
             this.sessionSummaryBgm.play();
             if (typeof wireBgmAfterAutoplayPolicy === 'function') {
-                wireBgmAfterAutoplayPolicy(this, () => this.sessionSummaryBgm, 'SessionSummaryScene');
+                wireBgmAfterAutoplayPolicy(this, () => this.sessionSummaryBgm);
             }
         }
         const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)

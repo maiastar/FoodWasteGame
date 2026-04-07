@@ -50,7 +50,7 @@ class ManagementScene extends Phaser.Scene {
             this.homeScreenMusic = this.sound.add('homescreenSynthwaveMusic', { loop: true, volume: 0.35 });
             this.homeScreenMusic.play();
             if (typeof wireBgmAfterAutoplayPolicy === 'function') {
-                wireBgmAfterAutoplayPolicy(this, () => this.homeScreenMusic, 'ManagementScene');
+                wireBgmAfterAutoplayPolicy(this, () => this.homeScreenMusic);
             }
         }
         const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
