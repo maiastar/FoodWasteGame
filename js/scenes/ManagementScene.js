@@ -8,6 +8,7 @@ class ManagementScene extends Phaser.Scene {
         super({ key: 'ManagementScene' });
         this.household = null;
         this.inventory = null;
+        this.homeScreenMusic = null;
     }
     
     create() {
@@ -44,6 +45,24 @@ class ManagementScene extends Phaser.Scene {
         this.createInventoryPanel();
         this.createCalendarPanel();
         this.createActionPanel();
+
+        if (this.cache.audio.exists('homescreenSynthwaveMusic')) {
+            this.homeScreenMusic = this.sound.add('homescreenSynthwaveMusic', { loop: true, volume: 0.35 });
+            this.homeScreenMusic.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.homeScreenMusic, 'ManagementScene');
+            }
+        }
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.homeScreenMusic) {
+                this.homeScreenMusic.stop();
+                this.homeScreenMusic.destroy();
+                this.homeScreenMusic = null;
+            }
+        });
         
         // Show hydra introduction on first visit
         const tutorial = new Tutorial(this);

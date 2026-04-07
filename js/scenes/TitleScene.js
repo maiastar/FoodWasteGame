@@ -5,6 +5,7 @@
 class TitleScene extends Phaser.Scene {
     constructor() {
         super({ key: 'TitleScene' });
+        this.titleSetupBgm = null;
     }
 
     create() {
@@ -39,5 +40,23 @@ class TitleScene extends Phaser.Scene {
         btn.on('pointerover',  () => btn.setFillStyle(0x66BB6A));
         btn.on('pointerout',   () => btn.setFillStyle(0x4CAF50));
         btn.on('pointerdown',  () => this.scene.start('SetupScene'));
+
+        if (this.cache.audio.exists('titleSetupBgm')) {
+            this.titleSetupBgm = this.sound.add('titleSetupBgm', { loop: true, volume: 0.35 });
+            this.titleSetupBgm.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.titleSetupBgm, 'TitleScene');
+            }
+        }
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.titleSetupBgm) {
+                this.titleSetupBgm.stop();
+                this.titleSetupBgm.destroy();
+                this.titleSetupBgm = null;
+            }
+        });
     }
 }

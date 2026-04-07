@@ -14,6 +14,7 @@ class SetupScene extends Phaser.Scene {
         this.selectedStoreDistance = 'medium';
         this.selectedAgeRange = '9-12';
         this.selectedAwareness = 40;
+        this.titleSetupBgm = null;
     }
     
     create() {
@@ -58,6 +59,24 @@ class SetupScene extends Phaser.Scene {
         
         // Back to title button (if we add title screen later)
         this.createBackButton(60, 60);
+
+        if (this.cache.audio.exists('titleSetupBgm')) {
+            this.titleSetupBgm = this.sound.add('titleSetupBgm', { loop: true, volume: 0.35 });
+            this.titleSetupBgm.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.titleSetupBgm, 'SetupScene');
+            }
+        }
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.titleSetupBgm) {
+                this.titleSetupBgm.stop();
+                this.titleSetupBgm.destroy();
+                this.titleSetupBgm = null;
+            }
+        });
     }
     
     /**

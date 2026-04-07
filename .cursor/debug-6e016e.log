@@ -58,3 +58,6 @@
 {"sessionId":"6e016e","location":"FridgeMinigame.js:create:postRestore","message":"after restoreZonePlacements","data":{"ms":19},"timestamp":1775503109460,"hypothesisId":"H4"}
 {"sessionId":"6e016e","location":"FridgeMinigame.js:create:syncComplete","message":"create sync complete before Hydra delay","data":{"ms":21,"itemContainers":3},"timestamp":1775503109462,"hypothesisId":"H1"}
 {"sessionId":"6e016e","location":"FridgeMinigame.js:hydraDelay","message":"Hydra fridge-entry callback","data":{"shouldShow":true},"timestamp":1775503109939,"hypothesisId":"H5"}
+{"sessionId":"6e016e","location":"BgmAutoplay.js:check","message":"ManagementScene","data":{"ctxState":"suspended","playing":true,"hypothesisId":"H1-autoplay"},"timestamp":1775581371161}
+{"sessionId":"6e016e","location":"BgmAutoplay.js:check","message":"ManagementScene","data":{"ctxState":"suspended","playing":true,"hypothesisId":"H1-autoplay"},"timestamp":1775581380457}
+{"sessionId":"6e016e","location":"main.js:globalAudioUnlock","message":"first-pointerdown","data":{"ctxState":"suspended","hypothesisId":"H1-autoplay"},"timestamp":1775581382852}

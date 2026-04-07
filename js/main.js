@@ -9,6 +9,20 @@ window.addEventListener('load', () => {
     
     // Create Phaser game instance
     const game = new Phaser.Game(gameConfig);
+
+    document.addEventListener(
+        'pointerdown',
+        () => {
+            if (!game.sound) return;
+            if (typeof game.sound.unlock === 'function') game.sound.unlock();
+            const ctx = game.sound.context;
+            if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+            // #region agent log
+            fetch('http://127.0.0.1:7859/ingest/b036e89a-1ab9-49a4-ae6c-75c49eb5b220', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6e016e' }, body: JSON.stringify({ sessionId: '6e016e', location: 'main.js:globalAudioUnlock', message: 'first-pointerdown', data: { ctxState: ctx ? ctx.state : 'no-ctx', hypothesisId: 'H1-autoplay' }, timestamp: Date.now() }) }).catch(() => {});
+            // #endregion
+        },
+        { capture: true, once: true }
+    );
     
     // Make game instance globally accessible for debugging
     window.game = game;

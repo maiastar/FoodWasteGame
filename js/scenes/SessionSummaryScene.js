@@ -6,6 +6,7 @@ class SessionSummaryScene extends Phaser.Scene {
     constructor() {
         super({ key: 'SessionSummaryScene' });
         this.summary = null;
+        this.sessionSummaryBgm = null;
     }
     
     init(data) {
@@ -245,6 +246,24 @@ class SessionSummaryScene extends Phaser.Scene {
         restartBtn.on('pointerdown', () => {
             gameState.clearSave();
             this.scene.start('SetupScene');
+        });
+
+        if (this.cache.audio.exists('sessionSummaryBgm')) {
+            this.sessionSummaryBgm = this.sound.add('sessionSummaryBgm', { loop: true, volume: 0.35 });
+            this.sessionSummaryBgm.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.sessionSummaryBgm, 'SessionSummaryScene');
+            }
+        }
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.sessionSummaryBgm) {
+                this.sessionSummaryBgm.stop();
+                this.sessionSummaryBgm.destroy();
+                this.sessionSummaryBgm = null;
+            }
         });
     }
 }

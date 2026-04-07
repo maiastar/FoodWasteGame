@@ -22,6 +22,7 @@ class PlanningMinigame extends Phaser.Scene {
             l4_balanced: false          // Analyze: all 3 meal types + 4+ unique recipes
         };
         this.objectiveTexts = [];       // Phaser text objects for live checkmark updates
+        this.planningMusic = null;
     }
     
     create() {
@@ -90,6 +91,25 @@ class PlanningMinigame extends Phaser.Scene {
 
         // Initialize progress strip and completeness indicator with current state
         this.updateCompletenessIndicator();
+
+        if (this.cache.audio.exists('planningCookingMusic')) {
+            this.planningMusic = this.sound.add('planningCookingMusic', { loop: true, volume: 0.4 });
+            this.planningMusic.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.planningMusic, 'PlanningMinigame');
+            }
+        }
+
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.planningMusic) {
+                this.planningMusic.stop();
+                this.planningMusic.destroy();
+                this.planningMusic = null;
+            }
+        });
 
         // Show hydra decision advice
         this.time.delayedCall(500, () => {

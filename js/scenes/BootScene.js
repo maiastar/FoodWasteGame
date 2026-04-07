@@ -34,7 +34,12 @@ class BootScene extends Phaser.Scene {
         this.load.image('titleScreen', sprite('Updated Title screen.png'));
         this.load.image('homescreen', sprite('Homescreen.png'));
         this.load.image('setupPageBg', sprite('Household set up page.png'));
-        
+
+        this.load.audio('planningCookingMusic', 'assets/audio/delosound-cooking-food-music-447269.mp3');
+        this.load.audio('homescreenSynthwaveMusic', 'assets/audio/tunetank-dreamy-synthwave-music-347512.mp3');
+        this.load.audio('titleSetupBgm', 'assets/audio/backgroundmusicforvideos-roblox-minecraft-fortnite-video-game-music-358426.mp3');
+        this.load.audio('sessionSummaryBgm', 'assets/audio/lnplusmusic-game-gaming-minecraft-background-music-366793.mp3');
+
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');
         
