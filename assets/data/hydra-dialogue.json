@@ -34,6 +34,14 @@
 
     "day1-need-fridge": {
       "advice": "Organize Fridge before cooking today. Putting food away neatly helps you see what you have and use it before it spoils."
+    },
+
+    "shopping-not-needed": {
+      "advice": "Your fridge and pantry are still well-stocked — you have enough food for several more days. Shopping now risks overbuying, which often leads to things spoiling before you can use them. Are you sure you want to go?"
+    },
+
+    "shopping-low-stock": {
+      "advice": "Your supplies are running a little low, but you still have food at home. Check your inventory before heading out — you may not need as much as you think!"
     }
   },
 

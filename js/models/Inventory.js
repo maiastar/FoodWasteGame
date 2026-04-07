@@ -199,6 +199,16 @@ class Inventory {
      */
     hasItem(itemName) {
         return this.items.some(item => 
+            item.name.toLowerCase() === itemName.toLowerCase() && !item.isSpoiled()
+        );
+    }
+
+    /**
+     * Check if an item exists in inventory regardless of spoilage.
+     * Used for educational display ("you have this but it's spoiled").
+     */
+    hasItemAny(itemName) {
+        return this.items.some(item =>
             item.name.toLowerCase() === itemName.toLowerCase()
         );
     }

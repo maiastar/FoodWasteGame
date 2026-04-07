@@ -49,6 +49,7 @@ class ManagementScene extends Phaser.Scene {
         const tutorial = new Tutorial(this);
         tutorial.initialize();
         tutorial.introduceHydraGuide();
+
     }
     
     /**
@@ -470,6 +471,34 @@ class ManagementScene extends Phaser.Scene {
      * @param {string} lockedContextKey - hydra-dialogue decisions key when locked
      * @param {function} onAllowed - runs when the player uses an unlocked button
      */
+    /**
+     * Determine whether the household actually needs to go grocery shopping.
+     *
+     * Returns { needed: boolean, urgency: 'urgent' | 'borderline' | 'stocked' }
+     *
+     * Uses distinct item count rather than serving math because item quantities
+     * in this game are typically 1–3 per item, which makes serving-based "days
+     * of food" collapse to < 1 even for a well-stocked pantry.
+     *
+     * Thresholds scale with family size:
+     *   urgent    : scheduled shopping day, OR items ≤ familySize
+     *   borderline: items ≤ familySize * 2
+     *   stocked   : items >  familySize * 2  (Hydra will discourage shopping)
+     */
+    _needsGroceries() {
+        const itemCount     = this.inventory.getItemCount();
+        const familySize    = Math.max(1, this.household.familySize);
+        const isShoppingDay = this.household.isShoppingDay();
+
+        if (isShoppingDay || itemCount <= familySize) {
+            return { needed: true,  urgency: 'urgent' };
+        }
+        if (itemCount <= familySize * 2) {
+            return { needed: true,  urgency: 'borderline' };
+        }
+        return { needed: false, urgency: 'stocked' };
+    }
+
     configureDay1ActionButton(bg, baseColor, enabled, lockedContextKey, onAllowed) {
         if (!this.isDay1Sequenced()) {
             bg.on('pointerup', onAllowed);
@@ -589,12 +618,23 @@ class ManagementScene extends Phaser.Scene {
             isShoppingDay ? {icon: '!', color: 0xFFD700} : null
         );
         this.configureDay1ActionButton(shopBtn, 0x4CAF50, shopEnabled, 'day1-need-plan', () => {
-            this.time.delayedCall(0, () => {
+            const goToStore = () => {
                 this.scene.start('GroceryTravelScene', {
                     direction: 'store',
                     nextScene: 'ShoppingMinigame'
                 });
-            });
+            };
+
+            const { urgency } = this._needsGroceries();
+            if (urgency === 'urgent') {
+                goToStore();
+                return;
+            }
+
+            // Fridge is stocked — ask Hydra before proceeding
+            const ctx = urgency === 'borderline' ? 'shopping-low-stock' : 'shopping-not-needed';
+            const hydra = new HydraGuide(this);
+            hydra.showWarning(ctx, goToStore, null);
         });
         
         // Cooking button (with badge if items expiring)

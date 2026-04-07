@@ -24,6 +24,7 @@
       "avgPrice": 3.99,
       "daysUntilSpoilage": 7,
       "perishability": 3,
+      "servings": 4,
       "spriteKey": "milk",
       "educationalFact": "Milk stays freshest on the middle shelf, not the door!"
     },
@@ -78,6 +79,7 @@
       "avgPrice": 1.99,
       "daysUntilSpoilage": 6,
       "perishability": 3,
+      "servings": 3,
       "spriteKey": "tomato",
       "educationalFact": "Store tomatoes at room temperature for best flavor until ripe."
     },
@@ -87,6 +89,7 @@
       "avgPrice": 3.50,
       "daysUntilSpoilage": 7,
       "perishability": 2,
+      "servings": 8,
       "spriteKey": "bread",
       "educationalFact": "Freeze bread you won't use within a week - it stays fresh!"
     },
@@ -96,6 +99,7 @@
       "avgPrice": 2.00,
       "daysUntilSpoilage": 365,
       "perishability": 1,
+      "servings": 4,
       "spriteKey": "pasta",
       "educationalFact": "Dry pasta lasts over a year in the pantry. Great for meal planning!"
     },
@@ -105,6 +109,7 @@
       "avgPrice": 4.00,
       "daysUntilSpoilage": 365,
       "perishability": 1,
+      "servings": 4,
       "spriteKey": "rice",
       "educationalFact": "Uncooked rice can last years if kept dry and pest-free."
     },
@@ -114,6 +119,7 @@
       "avgPrice": 4.50,
       "daysUntilSpoilage": 21,
       "perishability": 2,
+      "servings": 6,
       "spriteKey": "eggs",
       "educationalFact": "Eggs can last 3-5 weeks past their carton date if refrigerated."
     },
@@ -123,6 +129,7 @@
       "avgPrice": 5.99,
       "daysUntilSpoilage": 14,
       "perishability": 2,
+      "servings": 4,
       "spriteKey": "cheese",
       "educationalFact": "Hard cheeses last longer than soft. Wrap tightly to prevent drying."
     },
@@ -159,6 +166,7 @@
       "avgPrice": 1.25,
       "daysUntilSpoilage": 30,
       "perishability": 2,
+      "servings": 3,
       "spriteKey": "onion",
       "educationalFact": "Onions last longest in a cool, dry, well-ventilated area."
     },
@@ -168,6 +176,7 @@
       "avgPrice": 1.50,
       "daysUntilSpoilage": 730,
       "perishability": 1,
+      "servings": 3,
       "spriteKey": "canned-beans",
       "educationalFact": "Canned goods can last 2+ years. Great for emergency meals!"
     },
@@ -177,6 +186,7 @@
       "avgPrice": 2.50,
       "daysUntilSpoilage": 180,
       "perishability": 1,
+      "servings": 3,
       "spriteKey": "frozen-peas",
       "educationalFact": "Frozen vegetables are picked at peak ripeness and retain nutrients."
     },
@@ -195,6 +205,7 @@
       "avgPrice": 3.00,
       "daysUntilSpoilage": 5,
       "perishability": 4,
+      "servings": 3,
       "spriteKey": "spinach",
       "educationalFact": "Leafy greens wilt fast. Store in sealed container with paper towel."
     },
@@ -204,6 +215,7 @@
       "avgPrice": 4.99,
       "daysUntilSpoilage": 7,
       "perishability": 3,
+      "servings": 4,
       "spriteKey": "orange-juice",
       "educationalFact": "Fresh OJ lasts about a week. Freeze in ice cube trays for smoothies!"
     },

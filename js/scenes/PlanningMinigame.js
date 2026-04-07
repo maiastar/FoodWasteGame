@@ -13,6 +13,15 @@ class PlanningMinigame extends Phaser.Scene {
         this.recipes = [];
         this.plannedMeals = {}; // { day_mealType: recipeId }
         this.planningDays = 7; // Plan for next 7 days
+        
+        // Bloom's Taxonomy: per-session objective tracking (reset each time scene starts)
+        this.sessionObjectives = {
+            l1_checked: false,          // Remember: viewed expiring items
+            l2_lowWaste: false,         // Understand: projected waste < 3 lbs
+            l3_expiringMealsCount: 0,   // Apply: meals using expiring ingredients
+            l4_balanced: false          // Analyze: all 3 meal types + 4+ unique recipes
+        };
+        this.objectiveTexts = [];       // Phaser text objects for live checkmark updates
     }
     
     create() {
@@ -20,6 +29,12 @@ class PlanningMinigame extends Phaser.Scene {
         
         this.household = gameState.household;
         this.inventory = gameState.inventory;
+
+        // If the player already used "Check Expiring Items" today, pre-complete L1
+        const lastCheck = this.household.planningObjectives?.lastExpiringCheckDay ?? 0;
+        if (lastCheck === this.household.day) {
+            this.sessionObjectives.l1_checked = true;
+        }
 
         // Prune expired meal plan entries (days before today)
         this.household.mealPlan = this.household.mealPlan.filter(
@@ -41,6 +56,9 @@ class PlanningMinigame extends Phaser.Scene {
         
         // Header
         this.createHeader();
+
+        // Full-width progress strip (sits between header and calendar)
+        this.createProgressStrip();
         
         // Load recipes
         const recipeData = this.cache.json.get('recipes');
@@ -58,15 +76,21 @@ class PlanningMinigame extends Phaser.Scene {
         // Create info panel
         this.createInfoPanel();
         
+        // Create learning objectives panel (Bloom's Taxonomy)
+        this.createObjectivesPanel();
+        
         // Create completeness indicator
         this.createCompletenessIndicator();
         
         // Create submit button
         this.createSubmitButton();
         
-        // Back button
-        this.createBackButton();
-        
+        // Sync objectives panel checkmarks with any pre-seeded state (e.g. L1 already done in fridge)
+        this.updateObjectivesPanel();
+
+        // Initialize progress strip and completeness indicator with current state
+        this.updateCompletenessIndicator();
+
         // Show hydra decision advice
         this.time.delayedCall(500, () => {
             const hydraGuide = new HydraGuide(this);
@@ -94,7 +118,7 @@ class PlanningMinigame extends Phaser.Scene {
         }).setOrigin(0, 0.5);
         
         // Week text on left side
-        this.add.text(300, 35, `Week ${this.household.week}`, {
+        this.add.text(500, 35, `Week ${this.household.week}`, {
             fontSize: '24px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',
@@ -133,59 +157,95 @@ class PlanningMinigame extends Phaser.Scene {
         this.add.rectangle(calendarX, calendarY, calendarWidth, calendarHeight).setStrokeStyle(3, 0x333333).setOrigin(0, 0);
         
         // Title
-        this.add.text(calendarX + 20, calendarY + 15, '📆 This Week', {
+        this.add.text(calendarX + calendarWidth / 2, calendarY + 15, '📆 This Week', {
             fontSize: '24px',
             fontFamily: 'Fredoka, Arial',
             color: '#333333',
             fontStyle: 'bold'
-        }).setOrigin(0, 0);
+        }).setOrigin(0.5, 0);
         
         // Days and meals
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const meals = ['Breakfast', 'Lunch', 'Dinner'];
+
+        // Rotate the day-name array so column 0 always shows the real current weekday.
+        // household.day is 1-based; (day-1) % 7 gives 0=Mon … 6=Sun.
+        const todayDayOfWeek = ((this.household.day - 1) % 7); // 0-6
+        const days = Array.from({ length: 7 }, (_, i) => allDays[(todayDayOfWeek + i) % 7]);
         
-        const cellWidth = 105;
-        const cellHeight = 60;
+        const cellWidth = 96;   // 7 cols × 96 = 672px; gridStartX(140) + 672 = 812 ≤ calendarRight(830)
+        const cellHeight = 95;
         const gridStartX = calendarX + 110;
-        const gridStartY = calendarY + 60;
+        const gridStartY = calendarY + 90;  // pushed down to clear "This Week" title
         
-        // Draw meal labels (rows)
+        // Draw meal labels (rows) — each meal type gets a distinct color + left accent bar
+        const mealColors  = ['#E65100', '#00695C', '#283593']; // Breakfast / Lunch / Dinner
+        const mealAccents = [0xE65100,   0x00695C,   0x283593];
+
         meals.forEach((meal, mealIndex) => {
-            this.add.text(calendarX + 20, gridStartY + mealIndex * cellHeight + cellHeight / 2, meal, {
-                fontSize: '16px',
+            const rowY = gridStartY + mealIndex * cellHeight + cellHeight / 2;
+
+            // Colored accent bar on the far left
+            this.add.rectangle(calendarX + 2, rowY, 6, cellHeight - 10, mealAccents[mealIndex])
+                .setOrigin(0, 0.5);
+
+            // Label with matching color
+            this.add.text(calendarX + 14, rowY, meal, {
+                fontSize: '14px',
                 fontFamily: 'Fredoka, Arial',
-                color: '#666666',
+                color: mealColors[mealIndex],
                 fontStyle: 'bold'
             }).setOrigin(0, 0.5);
         });
         
-        // Draw day labels (columns)
+        // Draw day labels (columns) — column 0 is always today, highlighted in orange
         days.forEach((day, dayIndex) => {
+            const isToday = dayIndex === 0;
             this.add.text(gridStartX + dayIndex * cellWidth + cellWidth / 2, gridStartY - 20, day, {
                 fontSize: '16px',
                 fontFamily: 'Fredoka, Arial',
-                color: '#666666',
+                color: isToday ? '#E65100' : '#666666',
                 fontStyle: 'bold'
             }).setOrigin(0.5, 0);
         });
+
+        // TODAY pill above column 0 (always the current game day)
+        const todayX = gridStartX + cellWidth / 2;
+        this.add.rectangle(todayX, gridStartY - 36, 54, 17, 0xFF9800).setOrigin(0.5);
+        this.add.text(todayX, gridStartY - 36, 'TODAY', {
+            fontSize: '10px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        // Subtle warm tint on all cells in the first (today) column
+        meals.forEach((_, mealIndex) => {
+            this.add.rectangle(
+                gridStartX,
+                gridStartY + mealIndex * cellHeight,
+                cellWidth - 5,
+                cellHeight - 5,
+                0xFFF3E0, 0.6
+            ).setOrigin(0, 0);
+        });
         
-        // Draw calendar cells
+        // Draw calendar cells — use absolute game-day numbers so the meal plan
+        // and the stochastic simulation share the same day-key space.
         days.forEach((day, dayIndex) => {
+            const absDay = this.household.day + dayIndex; // absolute day (e.g. 8, 9, …)
             meals.forEach((meal, mealIndex) => {
-                const cellKey = `${dayIndex + 1}_${meal}`;
+                const cellKey = `${absDay}_${meal}`;
                 this.calendarCells[cellKey] = this.createCalendarCell(
                     gridStartX + dayIndex * cellWidth,
                     gridStartY + mealIndex * cellHeight,
                     cellWidth,
                     cellHeight,
-                    dayIndex + 1, // day 1-7
+                    absDay,
                     meal
                 );
             });
         });
-        
-        // Separator line
-        this.add.rectangle(calendarX + 20, calendarY + calendarHeight - 100, calendarWidth - 40, 2, 0xE0E0E0);
         
         // Current inventory reminder (cleaner single line with better spacing)
         const invSummary = this.inventory.getSummary();
@@ -224,16 +284,26 @@ class PlanningMinigame extends Phaser.Scene {
         bg.setInteractive({ dropZone: true, useHandCursor: true });
         
         // Meal slot text (will show recipe icon when assigned)
-        const slotText = this.add.text(width / 2 - 2.5, height / 2 - 2.5, '+', {
+        const slotText = this.add.text(width / 2 - 2.5, height * 0.38, '+', {
             fontSize: '28px',
             fontFamily: 'Fredoka, Arial',
             color: '#BDBDBD'
         }).setOrigin(0.5);
+
+        // Recipe name label shown below icon when a meal is assigned
+        const nameText = this.add.text(width / 2 - 2.5, height * 0.68, '', {
+            fontSize: '11px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#555555',
+            align: 'center',
+            wordWrap: { width: width - 10 }
+        }).setOrigin(0.5, 0);
         
-        cell.add([shadow, bg, slotText]);
+        cell.add([shadow, bg, slotText, nameText]);
         cell.setData('day', day);
         cell.setData('mealType', mealType);
         cell.setData('slotText', slotText);
+        cell.setData('nameText', nameText);
         cell.setData('bg', bg);
         cell.setData('shadow', shadow);
         cell.setData('isCalendarCell', true);
@@ -247,8 +317,9 @@ class PlanningMinigame extends Phaser.Scene {
         });
         
         bg.on('pointerout', () => {
-            bg.setFillStyle(0xffffff);
-            bg.setStrokeStyle(2, 0xBDBDBD);
+            const assigned = !!this.plannedMeals[`${day}_${mealType}`];
+            bg.setFillStyle(assigned ? 0xF3E5F5 : 0xffffff);
+            bg.setStrokeStyle(assigned ? 3 : 2, assigned ? 0x9C27B0 : 0xBDBDBD);
             shadow.setAlpha(0.08);
             cell.setScale(1);
         });
@@ -294,7 +365,7 @@ class PlanningMinigame extends Phaser.Scene {
         
         this.tweens.add({
             targets: overlay,
-            alpha: 0.7,
+            alpha: 0.85,
             duration: 250,
             ease: 'Power2'
         });
@@ -334,8 +405,12 @@ class PlanningMinigame extends Phaser.Scene {
         headerBar.setOrigin(0, 0).setDepth(5002);
         modalObjects.push(headerBar);
         
+        // Derive weekday name from absolute game day (day 1 = Mon, day 2 = Tue, …)
+        const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const _dayLabel = _dayNames[((day - 1) % 7)];
+
         // Title
-        const title = this.add.text(width / 2, panelY + 35, `Day ${day} • ${mealType}`, {
+        const title = this.add.text(width / 2, panelY + 35, `${_dayLabel} • ${mealType}`, {
             fontSize: '26px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',
@@ -354,17 +429,18 @@ class PlanningMinigame extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(5003);
         modalObjects.push(mealIcon);
         
-        // Filter recipes by meal category
+        // Filter recipes by meal category — strict match, fall back to all if < 2 found
         const categoryMap = {
             'Breakfast': 'breakfast',
             'Lunch': 'lunch',
             'Dinner': 'dinner'
         };
         const categoryFilter = categoryMap[mealType] || 'dinner';
-        
-        const availableRecipes = this.recipes.filter(recipe => 
-            recipe.category === categoryFilter || categoryFilter === 'dinner'
-        );
+        const strictMatch = this.recipes.filter(r => r.category === categoryFilter);
+        const availableRecipes = strictMatch.length >= 2 ? strictMatch : this.recipes;
+
+        // Track which recipe is already assigned to this slot (if any)
+        const assignedRecipeId = this.plannedMeals[`${day}_${mealType}`] || null;
         
         // Recipe cards with enhanced styling
         const recipeStartY = panelY + 90;
@@ -373,23 +449,24 @@ class PlanningMinigame extends Phaser.Scene {
         availableRecipes.slice(0, 6).forEach((recipe, index) => {
             const y = recipeStartY + index * recipeSpacing;
             const cardContainer = this.add.container(panelX + 20, y);
-            
+            const isAssigned = recipe.id === assignedRecipeId;
+
             // Card shadow
             const cardShadow = this.add.rectangle(2, 2, 610, 72, 0x000000, 0.1);
             cardShadow.setOrigin(0, 0);
             
-            // Card background
-            const cardBg = this.add.rectangle(0, 0, 610, 72, 0xffffff);
-            cardBg.setStrokeStyle(2, 0xE0E0E0);
+            // Card background — pre-highlighted if already assigned
+            const cardBg = this.add.rectangle(0, 0, 610, 72, isAssigned ? 0xEDE7F6 : 0xffffff);
+            cardBg.setStrokeStyle(isAssigned ? 3 : 2, isAssigned ? 0x7B1FA2 : 0xE0E0E0);
             cardBg.setOrigin(0, 0);
             cardBg.setInteractive({ useHandCursor: true });
             
-            // Left accent
-            const accent = this.add.rectangle(0, 0, 5, 72, 0x9C27B0);
+            // Left accent — deeper purple for assigned
+            const accent = this.add.rectangle(0, 0, 5, 72, isAssigned ? 0x7B1FA2 : 0x9C27B0);
             accent.setOrigin(0, 0);
             
-            // Recipe icon with circular bg (centred in taller card)
-            const iconCircle = this.add.circle(35, 36, 20, 0xF3E5F5);
+            // Recipe icon with circular bg
+            const iconCircle = this.add.circle(35, 36, 20, isAssigned ? 0xD1C4E9 : 0xF3E5F5);
             const recipeIcon = this.add.text(35, 36, recipe.icon, {
                 fontSize: '28px'
             }).setOrigin(0.5);
@@ -398,7 +475,7 @@ class PlanningMinigame extends Phaser.Scene {
             const recipeName = this.add.text(70, 10, recipe.name, {
                 fontSize: '18px',
                 fontFamily: 'Fredoka, Arial',
-                color: '#333333',
+                color: isAssigned ? '#4A148C' : '#333333',
                 fontStyle: 'bold'
             }).setOrigin(0, 0);
             
@@ -418,21 +495,21 @@ class PlanningMinigame extends Phaser.Scene {
                 fontFamily: 'Fredoka, Arial',
                 color: '#888888',
                 fontStyle: 'italic',
-                wordWrap: { width: 490 }
+                wordWrap: { width: 440 }
             }).setOrigin(0, 0);
             
-            // Arrow indicator
-            const arrow = this.add.text(585, 36, '→', {
+            // Right-side indicator: checkmark if assigned, arrow if not
+            const indicator = this.add.text(585, 36, isAssigned ? '✓' : '→', {
                 fontSize: '24px',
-                color: '#9C27B0',
+                color: isAssigned ? '#7B1FA2' : '#9C27B0',
                 fontStyle: 'bold'
             }).setOrigin(1, 0.5);
             
-            cardContainer.add([cardShadow, cardBg, accent, iconCircle, recipeIcon, recipeName, servingsInfo, ingredientText, arrow]);
+            cardContainer.add([cardShadow, cardBg, accent, iconCircle, recipeIcon, recipeName, servingsInfo, ingredientText, indicator]);
             cardContainer.setDepth(5003);
             modalObjects.push(cardContainer);
             
-            // Hover effects
+            // Hover effects — preserve assigned tint on pointerout
             cardBg.on('pointerover', () => {
                 cardBg.setFillStyle(0xF3E5F5);
                 cardBg.setStrokeStyle(3, 0x9C27B0);
@@ -440,8 +517,8 @@ class PlanningMinigame extends Phaser.Scene {
             });
             
             cardBg.on('pointerout', () => {
-                cardBg.setFillStyle(0xffffff);
-                cardBg.setStrokeStyle(2, 0xE0E0E0);
+                cardBg.setFillStyle(isAssigned ? 0xEDE7F6 : 0xffffff);
+                cardBg.setStrokeStyle(isAssigned ? 3 : 2, isAssigned ? 0x7B1FA2 : 0xE0E0E0);
                 cardContainer.setScale(1);
             });
             
@@ -570,7 +647,7 @@ class PlanningMinigame extends Phaser.Scene {
         
         if (slotText) {
             slotText.setText(recipe.icon);
-            slotText.setFontSize('32px');
+            slotText.setFontSize('28px');
             slotText.setColor('#333333');
             
             // Pop-in animation
@@ -582,6 +659,13 @@ class PlanningMinigame extends Phaser.Scene {
                 duration: 300,
                 ease: 'Back.easeOut'
             });
+        }
+
+        // Show truncated recipe name below the icon
+        const nameText = cell.getData('nameText');
+        if (nameText) {
+            const label = recipe.name.length > 12 ? recipe.name.slice(0, 11) + '\u2026' : recipe.name;
+            nameText.setText(label);
         }
         
         // Highlight cell with colored border
@@ -603,6 +687,15 @@ class PlanningMinigame extends Phaser.Scene {
         this.household.addMealToPlan(day, mealType.toLowerCase(), recipe.id);
         
         console.log(`📝 Planned: ${recipe.name} for Day ${day} ${mealType}`);
+
+        // L3 (Apply): recount unique slots using expiring ingredients after this assignment.
+        // A full recount (rather than an increment) prevents double-counting when a slot is
+        // replaced and avoids phantom counts if the same slot is assigned multiple times.
+        this.recalculateL3Count();
+
+        // L4 (Analyze): check balanced plan status
+        this.checkL4Balance();
+        this.updateObjectivesPanel();
         
         // Update waste projection and completeness
         this.updateWasteProjection();
@@ -615,11 +708,20 @@ class PlanningMinigame extends Phaser.Scene {
     clearMealSlot(day, mealType, cell) {
         const key = `${day}_${mealType}`;
         delete this.plannedMeals[key];
+
+        // Keep household.mealPlan in sync so the simulation reflects the removal
+        this.household.mealPlan = this.household.mealPlan.filter(
+            meal => !(meal.day === day && meal.mealType === mealType.toLowerCase())
+        );
         
         // Update cell display
         const slotText = cell.getData('slotText');
         const bg = cell.getData('bg');
         
+        // Clear recipe name label
+        const nameText = cell.getData('nameText');
+        if (nameText) nameText.setText('');
+
         if (slotText) {
             // Fade out animation
             this.tweens.add({
@@ -651,6 +753,13 @@ class PlanningMinigame extends Phaser.Scene {
         }
         
         console.log(`🗑️ Cleared meal slot: Day ${day} ${mealType}`);
+
+        // L3 (Apply): recount after removal so cleared expiring-ingredient slots reduce the counter
+        this.recalculateL3Count();
+
+        // L4 (Analyze): re-evaluate balance after removal
+        this.checkL4Balance();
+        this.updateObjectivesPanel();
         
         // Update waste projection and completeness
         this.updateWasteProjection();
@@ -672,12 +781,17 @@ class PlanningMinigame extends Phaser.Scene {
 
             if (slotText) {
                 slotText.setText(recipe.icon);
-                slotText.setFontSize('32px');
+                slotText.setFontSize('28px');
                 slotText.setColor('#333333');
             }
             if (bg) {
                 bg.setFillStyle(0xF3E5F5);
                 bg.setStrokeStyle(3, 0x9C27B0);
+            }
+            const nameText = cell.getData('nameText');
+            if (nameText) {
+                const label = recipe.name.length > 12 ? recipe.name.slice(0, 11) + '\u2026' : recipe.name;
+                nameText.setText(label);
             }
         });
     }
@@ -687,7 +801,7 @@ class PlanningMinigame extends Phaser.Scene {
      */
     createCompletenessIndicator() {
         const indicatorX = 120;
-        const indicatorY = 610;
+        const indicatorY = 655;
         
         // Background panel
         const bgPanel = this.add.rectangle(indicatorX - 70, indicatorY - 35, 160, 70, 0xffffff, 0.95);
@@ -708,14 +822,23 @@ class PlanningMinigame extends Phaser.Scene {
     }
     
     /**
-     * Update completeness indicator
+     * Update completeness indicator and full-width progress strip
      */
     updateCompletenessIndicator() {
-        if (!this.completenessRing) return;
-        
         const plannedMealsCount = Object.keys(this.plannedMeals).length;
         const optimalMealsCount = this.planningDays * 3;
         const percentage = plannedMealsCount / optimalMealsCount;
+
+        // Update full-width progress strip
+        if (this.progressFill) {
+            const fillWidth = this.cameras.main.width * percentage;
+            this.progressFill.setDisplaySize(Math.max(0, fillWidth), 16);
+        }
+        if (this.progressLabel) {
+            this.progressLabel.setText(`${plannedMealsCount} / ${optimalMealsCount} meals planned`);
+        }
+
+        if (!this.completenessRing) return;
         
         // Update ring
         const angle = percentage * 360;
@@ -769,7 +892,7 @@ class PlanningMinigame extends Phaser.Scene {
         const libraryX = 860;
         const libraryY = 90;
         const libraryWidth = 370;
-        const libraryHeight = 380;
+        const libraryHeight = 315;
         
         // Modern panel with shadow
         const libraryPanel = this.createModernPanel(libraryX, libraryY, libraryWidth, libraryHeight);
@@ -779,84 +902,291 @@ class PlanningMinigame extends Phaser.Scene {
         headerBar.setOrigin(0, 0);
         
         // Title
-        this.add.text(libraryX + 20, libraryY + 25, '📖 Recipe Library', {
-            fontSize: '24px',
+        this.add.text(libraryX + 20, libraryY + 25, '📖 Cookable Now', {
+            fontSize: '22px',
             fontFamily: 'Fredoka, Arial',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0, 0.5);
         
-        // Recipe cards with hover effects
+        // Score each recipe by cookability against current inventory
+        const scored = this.recipes.map(recipe => {
+            const total = recipe.ingredients.length;
+            const met   = recipe.ingredients.filter(ing =>
+                this.inventory.hasSufficientQuantity(ing.name, ing.quantity)
+            ).length;
+            const cookable = met === total;   // all ingredients present
+            const partial  = !cookable && met > 0; // some ingredients present
+            return { recipe, met, total, cookable, partial };
+        });
+
+        // Sort: fully cookable first, then partial, then unavailable; ties keep original order
+        scored.sort((a, b) => {
+            const rank = r => r.cookable ? 0 : r.partial ? 1 : 2;
+            return rank(a) - rank(b);
+        });
+
+        const cookableCount = scored.filter(s => s.cookable).length;
+        // Update header to show how many are cookable
+        this.add.text(libraryX + libraryWidth - 16, libraryY + 25,
+            `${cookableCount} ready`, {
+            fontSize: '13px',
+            fontFamily: 'Fredoka, Arial',
+            color: cookableCount > 0 ? '#A5D6A7' : '#EF9A9A',
+            fontStyle: 'bold'
+        }).setOrigin(1, 0.5);
+
+        // Recipe cards — up to 6, cookable ones first
         const recipeY = libraryY + 65;
-        const recipeSpacing = 45;
-        
-        this.recipes.slice(0, 6).forEach((recipe, index) => {
+        const recipeSpacing = 40;
+
+        scored.slice(0, 6).forEach(({ recipe, met, total, cookable, partial }, index) => {
             const y = recipeY + index * recipeSpacing;
             const cardContainer = this.add.container(libraryX + 10, y);
-            
-            // Card background
-            const cardBg = this.add.rectangle(0, 0, 350, 38, 0xF5F5F5);
-            cardBg.setStrokeStyle(2, 0xE0E0E0);
+
+            // Card style based on cookability
+            const bgColor     = cookable ? 0xF1F8E9 : partial ? 0xFFF8E1 : 0xF5F5F5;
+            const borderColor = cookable ? 0x81C784 : partial ? 0xFFB74D : 0xE0E0E0;
+            const nameColor   = cookable ? '#2E7D32' : partial ? '#E65100' : '#9E9E9E';
+
+            const cardBg = this.add.rectangle(0, 0, 350, 38, bgColor);
+            cardBg.setStrokeStyle(2, borderColor);
             cardBg.setOrigin(0, 0);
             cardBg.setInteractive({ useHandCursor: true });
-            
-            // Recipe icon with background
-            const iconBg = this.add.circle(25, 19, 16, 0x9C27B0, 0.15);
-            const icon = this.add.text(25, 19, recipe.icon, {
-                fontSize: '24px'
-            }).setOrigin(0.5);
-            
+
+            // Left accent bar showing cookability
+            const accentBar = this.add.rectangle(0, 0, 4, 38, borderColor);
+            accentBar.setOrigin(0, 0);
+
+            // Recipe icon
+            const iconBg = this.add.circle(25, 19, 16, cookable ? 0x4CAF50 : partial ? 0xFF9800 : 0x9C27B0, 0.15);
+            const icon   = this.add.text(25, 19, recipe.icon, { fontSize: '22px' }).setOrigin(0.5);
+
             // Recipe name
             const name = this.add.text(48, 19, recipe.name, {
-                fontSize: '16px',
-                fontFamily: 'Fredoka, Arial',
-                color: '#333333',
-                fontStyle: 'bold'
-            }).setOrigin(0, 0.5);
-            
-            // Servings badge
-            const servingsBadge = this.add.circle(325, 19, 14, 0x2196F3);
-            servingsBadge.setStrokeStyle(2, 0xffffff);
-            
-            const servingsText = this.add.text(325, 19, recipe.servings.toString(), {
                 fontSize: '14px',
                 fontFamily: 'Fredoka, Arial',
-                color: '#ffffff',
+                color: nameColor,
                 fontStyle: 'bold'
-            }).setOrigin(0.5);
-            
-            cardContainer.add([cardBg, iconBg, icon, name, servingsBadge, servingsText]);
-            
-            // Hover effects
+            }).setOrigin(0, 0.5);
+
+            // Ingredient progress (e.g. "2/3")
+            const progressText = this.add.text(295, 19, `${met}/${total}`, {
+                fontSize: '12px',
+                fontFamily: 'Fredoka, Arial',
+                color: cookable ? '#4CAF50' : partial ? '#FF9800' : '#BDBDBD',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5);
+
+            // Cookability dot
+            const dotColor = cookable ? 0x4CAF50 : partial ? 0xFF9800 : 0xBDBDBD;
+            const dot = this.add.circle(330, 19, 8, dotColor);
+
+            cardContainer.add([cardBg, accentBar, iconBg, icon, name, progressText, dot]);
+
+            // Hover effects (preserve cookability tint)
             cardBg.on('pointerover', () => {
-                cardBg.setFillStyle(0xE1BEE7);
-                cardBg.setStrokeStyle(3, 0x9C27B0);
+                cardBg.setFillStyle(cookable ? 0xC8E6C9 : partial ? 0xFFE0B2 : 0xE1BEE7);
+                cardBg.setStrokeStyle(3, borderColor);
                 cardContainer.setScale(1.03);
             });
-            
             cardBg.on('pointerout', () => {
-                cardBg.setFillStyle(0xF5F5F5);
-                cardBg.setStrokeStyle(2, 0xE0E0E0);
+                cardBg.setFillStyle(bgColor);
+                cardBg.setStrokeStyle(2, borderColor);
                 cardContainer.setScale(1);
             });
         });
         
-        // Hint with icon
-        this.add.text(libraryX + 20, libraryY + libraryHeight - 25, 
-            '💡 Click calendar cells to assign meals', {
-            fontSize: '15px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#9C27B0',
-            fontStyle: 'italic'
-        }).setOrigin(0, 0);
     }
     
+    /**
+     * Create Bloom's Taxonomy learning objectives panel
+     * Positioned below the recipe library (y=445), above the waste projection panel (y=595)
+     */
+    createObjectivesPanel() {
+        const panelX = 860;
+        const panelY = 415;
+        const panelWidth = 370;
+        const panelH = 130;
+
+        // Panel background
+        const shadow = this.add.rectangle(panelX + 4, panelY + 4, panelWidth, panelH, 0x000000, 0.12);
+        shadow.setOrigin(0, 0);
+
+        const bg = this.add.rectangle(panelX, panelY, panelWidth, panelH, 0xffffff);
+        bg.setStrokeStyle(2, 0x7B1FA2);
+        bg.setOrigin(0, 0);
+
+        // Header bar
+        const header = this.add.rectangle(panelX, panelY, panelWidth, 36, 0x7B1FA2);
+        header.setOrigin(0, 0);
+
+        this.add.text(panelX + 14, panelY + 18, '🎯 Learning Objectives', {
+            fontSize: '17px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0, 0.5);
+
+        // Objective definitions: [icon placeholder, label, bloom level tag]
+        const objectives = [
+            { label: 'Check expiring items',                tag: 'Remember' },
+            { label: 'Get projected waste < 3 lbs',        tag: 'Understand' },
+            { label: 'Plan 2+ meals with expiring items',  tag: 'Apply' },
+            { label: 'Cover all meals + 4 recipes',        tag: 'Analyze' }
+        ];
+
+        const rowStartY = panelY + 50;
+        const rowSpacing = 22;
+
+        objectives.forEach((obj, i) => {
+            const rowY = rowStartY + i * rowSpacing;
+
+            // Level tag pill
+            const tagBg = this.add.rectangle(panelX + 14, rowY, 68, 16, 0xEDE7F6);
+            tagBg.setOrigin(0, 0.5);
+            this.add.text(panelX + 48, rowY, obj.tag, {
+                fontSize: '10px',
+                fontFamily: 'Fredoka, Arial',
+                color: '#7B1FA2',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5);
+
+            // Objective label
+            this.add.text(panelX + 90, rowY, obj.label, {
+                fontSize: '13px',
+                fontFamily: 'Fredoka, Arial',
+                color: '#444444'
+            }).setOrigin(0, 0.5);
+
+            // Status icon (○ or ✓) — stored for later updates
+            const statusText = this.add.text(panelX + panelWidth - 20, rowY, '○', {
+                fontSize: '16px',
+                fontFamily: 'Fredoka, Arial',
+                color: '#BDBDBD',
+                fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5);
+
+            this.objectiveTexts.push(statusText);
+        });
+
+    }
+
+    /**
+     * Re-render each objective row's status icon based on current sessionObjectives state.
+     * Called after every tracking event so the panel reflects live progress.
+     */
+    updateObjectivesPanel() {
+        if (!this.objectiveTexts || this.objectiveTexts.length < 4) return;
+
+        const states = [
+            this.sessionObjectives.l1_checked,
+            this.sessionObjectives.l2_lowWaste,
+            this.sessionObjectives.l3_expiringMealsCount >= 2,
+            this.sessionObjectives.l4_balanced
+        ];
+
+        states.forEach((done, i) => {
+            const t = this.objectiveTexts[i];
+            if (!t) return;
+            if (done) {
+                t.setText('✓');
+                t.setColor('#4CAF50');
+                // Brief pop animation on first completion
+                if (!t.getData('animated')) {
+                    t.setData('animated', true);
+                    t.setScale(0.5);
+                    this.tweens.add({
+                        targets: t,
+                        scaleX: 1,
+                        scaleY: 1,
+                        duration: 300,
+                        ease: 'Back.easeOut'
+                    });
+                }
+            } else {
+                t.setText('○');
+                t.setColor('#BDBDBD');
+            }
+        });
+
+    }
+
+
+    /**
+     * Full-width planning progress strip between header and calendar.
+     * Shows a fill bar + "X / 21 meals planned" counter that updates live.
+     */
+    createProgressStrip() {
+        const total  = this.planningDays * 3;   // 21
+        const stripY = 70;
+        const stripH = 16;
+        const width  = this.cameras.main.width; // 1280
+
+        // Dark background track
+        this.add.rectangle(0, stripY, width, stripH, 0x6A1B9A).setOrigin(0, 0);
+
+        // Fill bar — width driven by planned meal count
+        this.progressFill = this.add.rectangle(0, stripY, 0, stripH, 0xCE93D8).setOrigin(0, 0);
+
+        // Counter label centred on the strip
+        this.progressLabel = this.add.text(width / 2, stripY + stripH / 2,
+            `0 / ${total} meals planned`, {
+            fontSize: '12px',
+            fontFamily: 'Fredoka, Arial',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+    }
+
+    /**
+     * L3 (Apply): Check whether a recipe's ingredients include any expiring inventory items.
+     * Uses a fuzzy name match so "Chicken Breast" matches an item named "Chicken".
+     * @param {Object} recipe - Recipe object with ingredients array
+     * @returns {boolean} True if at least one ingredient is expiring soon
+     */
+    recipeUsesExpiringItems(recipe) {
+        if (!recipe || !recipe.ingredients) return false;
+        const expiring = this.inventory.getExpiringSoonItems ? this.inventory.getExpiringSoonItems() : [];
+        if (expiring.length === 0) return false;
+        const expiringNames = expiring.map(i => i.name.toLowerCase());
+        return recipe.ingredients.some(ing => {
+            const ingName = ing.name.toLowerCase();
+            return expiringNames.some(n => n.includes(ingName) || ingName.includes(n));
+        });
+    }
+
+    /**
+     * Recount L3 from scratch by scanning every currently-planned slot.
+     * Calling this after any assign or clear prevents double-counting when a slot
+     * is replaced and avoids the missing-decrement bug when a slot is cleared.
+     */
+    recalculateL3Count() {
+        let count = 0;
+        Object.values(this.plannedMeals).forEach(recipeId => {
+            const recipe = this.recipes.find(r => r.id === recipeId);
+            if (recipe && this.recipeUsesExpiringItems(recipe)) {
+                count++;
+            }
+        });
+        this.sessionObjectives.l3_expiringMealsCount = count;
+    }
+
+    /**
+     * L4 (Analyze): Check whether the current plan covers all 3 meal types and uses 4+ unique recipes.
+     */
+    checkL4Balance() {
+        const types = new Set(Object.keys(this.plannedMeals).map(k => k.split('_')[1]));
+        const unique = new Set(Object.values(this.plannedMeals));
+        this.sessionObjectives.l4_balanced = types.size >= 3 && unique.size >= 4;
+    }
+
     /**
      * Create enhanced info panel with visual projections
      */
     createInfoPanel() {
         const infoX = 860;
-        const infoY = 490;
+        const infoY = 555;
         const infoWidth = 370;
         const infoHeight = 140;
         
@@ -901,14 +1231,17 @@ class PlanningMinigame extends Phaser.Scene {
      */
     updateWasteProjection() {
         const model = new StochasticModel();
-        const projection = model.simulateFuture(this.household, this.inventory, this.planningDays);
+        const projection = model.simulateFuture(
+            this.household, this.inventory, this.planningDays,
+            { recipes: this.recipes, iterations: 10 }
+        );
         
         const plannedMealsCount = Object.keys(this.plannedMeals).length;
         const optimalMealsCount = this.planningDays * 3;
         const planCompleteness = plannedMealsCount / optimalMealsCount;
         
         const infoX = 860;
-        const infoY = 490;
+        const infoY = 555;
         
         if (planCompleteness === 0) {
             // No meals planned
@@ -965,6 +1298,12 @@ class PlanningMinigame extends Phaser.Scene {
                 projection.projectedWaste, baselineWaste,
                 { low: 0x4CAF50, mid: 0xFF9800, high: 0xF44336 }
             );
+
+            // L2 (Understand): check if projected waste is below 3 lbs
+            if (projection.projectedWaste < 3) {
+                this.sessionObjectives.l2_lowWaste = true;
+                this.updateObjectivesPanel();
+            }
         }
     }
     
@@ -1024,6 +1363,13 @@ class PlanningMinigame extends Phaser.Scene {
         
         // Write unique planned recipe IDs so ShoppingMinigame can auto-populate the list
         this.household.presetRecipeIds = [...new Set(Object.values(this.plannedMeals))];
+
+        // Bloom's Taxonomy: accumulate per-session objective completions into persistent counters
+        const planObj = this.household.planningObjectives;
+        if (this.sessionObjectives.l1_checked)       planObj.sessionsCheckedExpiring++;
+        if (this.sessionObjectives.l2_lowWaste)       planObj.sessionsWithLowWaste++;
+        planObj.totalExpiringItemsSaved += this.sessionObjectives.l3_expiringMealsCount;
+        if (this.sessionObjectives.l4_balanced)       planObj.balancedPlansCreated++;
         
         // Save game
         gameState.save();
@@ -1072,9 +1418,12 @@ class PlanningMinigame extends Phaser.Scene {
             feedback.push('🌟 Good variety in your plan!');
         }
         
-        // Run waste projection
+        // Run waste projection (averaged over 10 Monte Carlo runs for a stable score)
         const model = new StochasticModel();
-        const projection = model.simulateFuture(this.household, this.inventory, this.planningDays);
+        const projection = model.simulateFuture(
+            this.household, this.inventory, this.planningDays,
+            { recipes: this.recipes, iterations: 10 }
+        );
         
         return {
             score: Math.max(0, Math.min(100, score)),
@@ -1135,9 +1484,9 @@ class PlanningMinigame extends Phaser.Scene {
             ease: 'Power2'
         });
         
-        // Modern panel with shadow
+        // Modern panel with shadow — expanded to include objectives section
         const panelWidth = 750;
-        const panelHeight = 580;
+        const panelHeight = 680;
         const panelX = width / 2 - panelWidth / 2;
         const panelY = height / 2 - panelHeight / 2;
         
@@ -1257,44 +1606,89 @@ class PlanningMinigame extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0, 0).setDepth(6003);
         
-        // Feedback badges
-        const feedbackY = panelY + panelHeight - 190;
-        score.feedback.forEach((feedback, index) => {
-            const feedbackText = this.add.text(width / 2, feedbackY + index * 32, feedback, {
-                fontSize: '18px',
+        // Feedback badge (first item only, space-constrained)
+        if (score.feedback.length > 0) {
+            const fbText = this.add.text(width / 2, statsY + statSpacing + 60, score.feedback[0], {
+                fontSize: '16px',
                 fontFamily: 'Fredoka, Arial',
                 color: '#333333',
                 align: 'center',
                 backgroundColor: '#F3E5F5',
-                padding: { x: 15, y: 5 }
+                padding: { x: 12, y: 4 }
             }).setOrigin(0.5).setDepth(6003);
-            
-            // Fade in animation
-            feedbackText.setAlpha(0);
-            this.tweens.add({
-                targets: feedbackText,
-                alpha: 1,
-                duration: 300,
-                delay: 400 + index * 150,
-                ease: 'Power2'
-            });
+            fbText.setAlpha(0);
+            this.tweens.add({ targets: fbText, alpha: 1, duration: 300, delay: 500, ease: 'Power2' });
+        }
+
+        // ---- Bloom's Taxonomy Objectives Section ----
+        const objSectionY = statsY + statSpacing + 90;
+
+        // Section header
+        const objHeaderBg = this.add.rectangle(width / 2, objSectionY, 700, 32, 0x7B1FA2)
+            .setDepth(6003);
+        this.add.text(width / 2, objSectionY, '🎯 Learning Objectives', {
+            fontSize: '17px', fontFamily: 'Fredoka, Arial', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5).setDepth(6004);
+
+        // Compute session completion count
+        const sessionStates = [
+            this.sessionObjectives.l1_checked,
+            this.sessionObjectives.l2_lowWaste,
+            this.sessionObjectives.l3_expiringMealsCount >= 2,
+            this.sessionObjectives.l4_balanced
+        ];
+        const completedCount = sessionStates.filter(Boolean).length;
+
+        // Completion badge in header right
+        const badgeColor = completedCount === 4 ? 0x4CAF50 : completedCount >= 2 ? 0xFF9800 : 0x9E9E9E;
+        this.add.text(width / 2 + 310, objSectionY, `${completedCount}/4`, {
+            fontSize: '16px', fontFamily: 'Fredoka, Arial', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(1, 0.5).setDepth(6005);
+
+        const objLabels = [
+            { tag: 'Remember',    text: 'Check which items expire soon' },
+            { tag: 'Understand',  text: 'Get projected waste below 3 lbs' },
+            { tag: 'Apply',       text: 'Plan 2+ meals with expiring items' },
+            { tag: 'Analyze',     text: 'Cover all meal types + 4 recipes' }
+        ];
+
+        const objRowStartY = objSectionY + 24;
+        objLabels.forEach((obj, i) => {
+            const rowY = objRowStartY + i * 26;
+            const done = sessionStates[i];
+
+            // Tag pill
+            const pillBg = this.add.rectangle(panelX + 28, rowY, 72, 18, done ? 0xE8F5E9 : 0xF3E5F5)
+                .setOrigin(0, 0.5).setDepth(6003);
+            this.add.text(panelX + 64, rowY, obj.tag, {
+                fontSize: '11px', fontFamily: 'Fredoka, Arial',
+                color: done ? '#2E7D32' : '#7B1FA2', fontStyle: 'bold'
+            }).setOrigin(0.5, 0.5).setDepth(6004);
+
+            // Label
+            this.add.text(panelX + 110, rowY, obj.text, {
+                fontSize: '13px', fontFamily: 'Fredoka, Arial', color: done ? '#333333' : '#888888'
+            }).setOrigin(0, 0.5).setDepth(6003);
+
+            // Checkmark
+            this.add.text(panelX + panelWidth - 24, rowY, done ? '✓' : '✗', {
+                fontSize: '16px', fontFamily: 'Fredoka, Arial',
+                color: done ? '#4CAF50' : '#BDBDBD', fontStyle: 'bold'
+            }).setOrigin(1, 0.5).setDepth(6004);
         });
-        
-        // Tip banner
-        const tipY = panelY + panelHeight - 100;
-        const tipBanner = this.add.rectangle(width / 2, tipY, 680, 45, 0xFFF3E0);
-        tipBanner.setStrokeStyle(2, 0xFF9800);
-        tipBanner.setDepth(6003);
-        
-        this.add.text(width / 2, tipY, '💡 Good planning reduces waste by 25-30%!', {
-            fontSize: '17px',
-            fontFamily: 'Fredoka, Arial',
-            color: '#FF9800',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setDepth(6004);
-        
+
+        // Cumulative lifetime stats strip
+        const obj = this.household.planningObjectives;
+        const statsStripY = objRowStartY + objLabels.length * 26 + 12;
+        const statsBg = this.add.rectangle(width / 2, statsStripY, 700, 28, 0xF3E5F5)
+            .setDepth(6003);
+        this.add.text(width / 2, statsStripY,
+            `All-time: ${obj.sessionsCheckedExpiring} checks  |  ${obj.sessionsWithLowWaste} low-waste sessions  |  ${obj.totalExpiringItemsSaved} expiring meals saved  |  ${obj.balancedPlansCreated} balanced plans`, {
+            fontSize: '11px', fontFamily: 'Fredoka, Arial', color: '#7B1FA2', align: 'center'
+        }).setOrigin(0.5, 0.5).setDepth(6004);
+
         // Continue button with enhanced styling
-        const continueBtn = this.add.container(width / 2, panelY + panelHeight - 40).setDepth(6005);
+        const continueBtn = this.add.container(width / 2, panelY + panelHeight - 32).setDepth(6005);
         
         const btnBg = this.add.rectangle(0, 0, 280, 65, 0x4CAF50);
         btnBg.setStrokeStyle(4, 0xffffff);

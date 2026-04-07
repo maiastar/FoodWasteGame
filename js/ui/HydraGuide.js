@@ -234,6 +234,122 @@ class HydraGuide {
     }
 
     /**
+     * Show a two-button warning card before a potentially harmful action.
+     * The "Go Anyway" button calls onProceed; "Stay Home" calls onCancel.
+     * Falls through to onProceed immediately if the guide is already visible
+     * or no matching dialogue exists.
+     *
+     * @param {string}   context   - dialogue key under decisions (e.g. 'shopping-not-needed')
+     * @param {function} onProceed - called when player chooses to proceed anyway
+     * @param {function} onCancel  - called when player chooses to stay / cancel
+     */
+    showWarning(context, onProceed = null, onCancel = null) {
+        if (this.isVisible || !this.dialogueData) {
+            if (onProceed) onProceed();
+            return;
+        }
+
+        const dialogue = this.dialogueData.decisions[context];
+        if (!dialogue) {
+            console.warn(`No dialogue found for warning context: ${context}`);
+            if (onProceed) onProceed();
+            return;
+        }
+
+        this.isVisible = true;
+        const width  = this.scene.cameras.main.width;
+        const height = this.scene.cameras.main.height;
+
+        this.container = this.scene.add.container(0, 0);
+        this.container.setDepth(9500);
+
+        // Dim overlay
+        const overlay = this.scene.add.rectangle(0, 0, width, height, 0x000000, 0.65);
+        overlay.setOrigin(0, 0);
+        this.container.add(overlay);
+
+        const cardW = 520;
+        const cardH = 310;
+        const cx    = width  / 2;
+        const cy    = height / 2;
+
+        const shadow = this.scene.add.rectangle(cx + 5, cy + 5, cardW, cardH, 0x000000, 0.25);
+        this.container.add(shadow);
+
+        // Amber card with warning border
+        const card = this.scene.add.rectangle(cx, cy, cardW, cardH, 0xFFF8E1);
+        card.setStrokeStyle(4, 0xF44336);
+        card.setScale(0.85);
+        this.scene.tweens.add({ targets: [card, shadow], scale: 1, duration: 350, ease: 'Back.easeOut' });
+        this.container.add(card);
+
+        // Header
+        const icon = this.scene.add.text(cx - cardW / 2 + 28, cy - cardH / 2 + 22, '⚠️', { fontSize: '36px' }).setOrigin(0, 0);
+        this.container.add(icon);
+
+        const header = this.scene.add.text(cx - cardW / 2 + 76, cy - cardH / 2 + 26, 'Hold on!', {
+            fontSize: '22px', fontFamily: 'Fredoka, Arial', color: '#B71C1C', fontStyle: 'bold'
+        }).setOrigin(0, 0);
+        this.container.add(header);
+
+        const divider = this.scene.add.rectangle(cx, cy - cardH / 2 + 72, cardW - 40, 2, 0xF44336, 0.4);
+        this.container.add(divider);
+
+        const advice = this.scene.add.text(cx, cy - 24, dialogue.advice, {
+            fontSize: '17px', fontFamily: 'Fredoka, Arial', color: '#4E342E',
+            wordWrap: { width: cardW - 60 }, align: 'center', lineSpacing: 6
+        }).setOrigin(0.5, 0.5);
+        this.container.add(advice);
+
+        const btnY    = cy + cardH / 2 - 36;
+        const halfGap = 110;
+
+        // "Go Anyway" button (red)
+        const goBtn = this.scene.add.rectangle(cx - halfGap, btnY, 190, 46, 0xF44336);
+        goBtn.setStrokeStyle(3, 0xffffff);
+        goBtn.setInteractive({ useHandCursor: true });
+        this.container.add(goBtn);
+
+        const goText = this.scene.add.text(cx - halfGap, btnY, 'Go Anyway', {
+            fontSize: '19px', fontFamily: 'Fredoka, Arial', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.container.add(goText);
+
+        goBtn.on('pointerover', () => goBtn.setFillStyle(0xE53935));
+        goBtn.on('pointerout',  () => goBtn.setFillStyle(0xF44336));
+        goBtn.on('pointerdown', () => {
+            this.hide();
+            if (onProceed) onProceed();
+        });
+
+        // "Stay Home" button (green)
+        const stayBtn = this.scene.add.rectangle(cx + halfGap, btnY, 190, 46, 0x4CAF50);
+        stayBtn.setStrokeStyle(3, 0xffffff);
+        stayBtn.setInteractive({ useHandCursor: true });
+        this.container.add(stayBtn);
+
+        const stayText = this.scene.add.text(cx + halfGap, btnY, 'Stay Home', {
+            fontSize: '19px', fontFamily: 'Fredoka, Arial', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.container.add(stayText);
+
+        stayBtn.on('pointerover', () => stayBtn.setFillStyle(0x43A047));
+        stayBtn.on('pointerout',  () => stayBtn.setFillStyle(0x4CAF50));
+        stayBtn.on('pointerdown', () => {
+            this.hide();
+            if (onCancel) onCancel();
+        });
+
+        // Hydra sprite to the left of the card
+        if (this.scene.textures.exists('hydraGuide')) {
+            const sprite = this.scene.add.image(cx - cardW / 2 - 150, cy, 'hydraGuide');
+            sprite.setDisplaySize(320, 320);
+            if (sprite.postFX) sprite.postFX.addColorMatrix().saturate(1);
+            this.container.add(sprite);
+        }
+    }
+
+    /**
      * Dismiss the advice card
      */
     hide() {

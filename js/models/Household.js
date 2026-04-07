@@ -67,6 +67,15 @@ class Household {
             avoidedImpulseTrips: 0
         };
         
+        // Bloom's Taxonomy learning objective progress (persisted across sessions)
+        this.planningObjectives = config.planningObjectives || {
+            sessionsCheckedExpiring: 0,   // L1 Remember: sessions where player checked expiring items
+            sessionsWithLowWaste: 0,       // L2 Understand: sessions finishing with projected waste < 3 lbs
+            totalExpiringItemsSaved: 0,    // L3 Apply: cumulative expiring-ingredient meals planned
+            balancedPlansCreated: 0,       // L4 Analyze: sessions with all 3 meal types + 4+ recipes
+            lastExpiringCheckDay: 0        // tracks which game day the player last used Check Expiring Items
+        };
+        
         // Mass balance tracking: Fp (purchased) and Fc (consumed) in kg
         // Conservation of mass: Fp - Fc - Fw = dFs/dt
         this.totalFoodPurchasedKg = config.totalFoodPurchasedKg || 0;
@@ -490,11 +499,11 @@ class Household {
      * @param {string} recipeId - Recipe identifier
      */
     addMealToPlan(day, mealType, recipeId) {
-        this.mealPlan.push({
-            day: day,
-            mealType: mealType,
-            recipeId: recipeId
-        });
+        // Remove any existing entry for this slot before adding to prevent duplicates
+        this.mealPlan = this.mealPlan.filter(
+            meal => !(meal.day === day && meal.mealType === mealType)
+        );
+        this.mealPlan.push({ day, mealType, recipeId });
         console.log(`📝 Meal planned: ${recipeId} for ${mealType} on day ${day}`);
     }
     
@@ -728,7 +737,10 @@ class Household {
             weeklyFoodPurchasedKg: this.weeklyFoodPurchasedKg,
             weeklyFoodConsumedKg:  this.weeklyFoodConsumedKg,
             weeklyFoodWastedKg:    this.weeklyFoodWastedKg,
-            lastWeekMassBalance:   this.lastWeekMassBalance
+            lastWeekMassBalance:   this.lastWeekMassBalance,
+            
+            // Bloom's Taxonomy learning objective progress
+            planningObjectives: this.planningObjectives
         };
         
         localStorage.setItem('foodWasteSimulator_household', JSON.stringify(saveData));

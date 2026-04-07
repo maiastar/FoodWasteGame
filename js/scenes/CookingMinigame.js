@@ -376,13 +376,24 @@ class CookingMinigame extends Phaser.Scene {
         
         const ingredientsY = recipeY + 310;
         this.selectedRecipe.ingredients.forEach((ingredient, index) => {
-            const hasIt = this.inventory.hasSufficientQuantity(ingredient.name, ingredient.quantity);
-            const checkmark = hasIt ? '✅' : '❌';
-            const color = hasIt ? '#4CAF50' : '#F44336';
-            
-            this.add.text(recipeX + 30, ingredientsY + index * 30, 
-                `${checkmark} ${ingredient.name} (${ingredient.quantity})`, {
-                fontSize: '18px',
+            const hasIt      = this.inventory.hasSufficientQuantity(ingredient.name, ingredient.quantity);
+            const hasSome    = !hasIt && this.inventory.hasItem(ingredient.name);
+            const ownsSpoiled = !hasIt && !hasSome && this.inventory.hasItemAny(ingredient.name);
+
+            let checkmark, color, suffix;
+            if (hasIt) {
+                checkmark = '✅'; color = '#4CAF50'; suffix = '';
+            } else if (hasSome) {
+                checkmark = '⚠️'; color = '#FF9800'; suffix = ' (need more)';
+            } else if (ownsSpoiled) {
+                checkmark = '🔴'; color = '#FF6F00'; suffix = ' (spoiled!)';
+            } else {
+                checkmark = '❌'; color = '#F44336'; suffix = ' (not in stock)';
+            }
+
+            this.add.text(recipeX + 30, ingredientsY + index * 30,
+                `${checkmark} ${ingredient.name} (${ingredient.quantity})${suffix}`, {
+                fontSize: '16px',
                 fontFamily: 'Fredoka, Arial',
                 color: color
             }).setOrigin(0, 0);

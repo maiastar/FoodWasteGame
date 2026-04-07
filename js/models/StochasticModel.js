@@ -12,13 +12,14 @@ class StochasticModel {
     }
     
     /**
-     * Calculate daily waste for a household
-     * Runs stochastic simulation on all inventory items
+     * Calculate daily waste for a household.
+     * Runs stochastic simulation on all inventory items.
      * @param {Household} household - Household object
      * @param {Inventory} inventory - Inventory object
+     * @param {Array} recipes - Recipe catalog for ingredient matching (optional)
      * @returns {Object} Waste calculation results
      */
-    calculateDailyWaste(household, inventory) {
+    calculateDailyWaste(household, inventory, recipes = []) {
         const results = {
             wastedItems: [],
             consumedItems: [],
@@ -42,8 +43,8 @@ class StochasticModel {
                 return;
             }
             
-            // Calculate probabilities
-            const spoilProb = this.calculateSpoilProbability(item, household, inventory);
+            // Calculate probabilities (recipes forwarded for ingredient-aware spoil check)
+            const spoilProb = this.calculateSpoilProbability(item, household, inventory, recipes);
             const consumeProb = this.calculateConsumeProbability(item, household, inventory);
             
             // Monte Carlo simulation - roll dice
@@ -100,13 +101,14 @@ class StochasticModel {
     }
     
     /**
-     * Calculate probability that an item will spoil today
+     * Calculate probability that an item will spoil today.
      * @param {FoodItem} item - Food item
      * @param {Household} household - Household context
      * @param {Inventory} inventory - Inventory context
+     * @param {Array} recipes - Recipe catalog for ingredient matching (optional)
      * @returns {number} Probability (0-1)
      */
-    calculateSpoilProbability(item, household, inventory) {
+    calculateSpoilProbability(item, household, inventory, recipes = []) {
         // Start with item's inherent spoilage probability
         let probability = item.getSpoilageProbability(household.storageQuality);
         
@@ -114,15 +116,17 @@ class StochasticModel {
         probability *= household.getWasteAwarenessMultiplier();
         
         // Modify by how full the inventory is (overcrowding increases waste)
-        const inventoryFullness = inventory.getItemCount() / (household.familySize * 10); // Assume 10 items per person is "full"
+        const inventoryFullness = inventory.getItemCount() / (household.familySize * 10);
         if (inventoryFullness > 1.0) {
-            probability *= (1.0 + (inventoryFullness - 1.0) * 0.3); // 30% increase per unit over capacity
+            probability *= (1.0 + (inventoryFullness - 1.0) * 0.3);
         }
         
-        // Items not in meal plan are more likely to be forgotten
-        const isInMealPlan = this.isItemInUpcomingMeals(item, household);
+        // Items not referenced by any upcoming planned recipe are more likely to be forgotten.
+        // With real ingredient matching, planning a specific recipe protects only the items
+        // that recipe actually uses — making meal planning meaningfully reduce projected waste.
+        const isInMealPlan = this.isItemInUpcomingMeals(item, household, recipes);
         if (!isInMealPlan && item.freshness <= 3) {
-            probability *= 1.4; // 40% more likely to waste if not planned
+            probability *= 1.4; // 40% more likely to waste if not in any planned recipe
         }
         
         return Math.min(probability, 1.0);
@@ -167,24 +171,64 @@ class StochasticModel {
     }
     
     /**
-     * Check if item is in upcoming meal plans
-     * @param {FoodItem} item - Food item
-     * @param {Household} household - Household context
-     * @returns {boolean} True if in meal plan
+     * Check if a specific item is used in any planned meal within the next 3 days.
+     * When a recipes catalog is provided, performs a fuzzy ingredient-name match so
+     * that planning a "Pasta with Tomato Sauce" recipe actually protects Tomato and
+     * Pasta items in the inventory. Without a catalog falls back to "any meals planned."
+     * @param {FoodItem} item - Inventory item to check
+     * @param {Household} household - Household (reads mealPlan)
+     * @param {Array} recipes - Full recipe catalog (optional)
+     * @returns {boolean} True if item is referenced by an upcoming planned recipe
      * @private
      */
-    isItemInUpcomingMeals(item, household) {
-        // Look ahead 3 days
-        const upcomingDays = [household.day, household.day + 1, household.day + 2];
-        
+    isItemInUpcomingMeals(item, household, recipes = []) {
+        // Check all 7 planned days so meals assigned to any day of the week
+        // meaningfully reduce spoilage probability for matched ingredients.
+        const upcomingDays = Array.from({ length: 7 }, (_, i) => household.day + i);
+
         return upcomingDays.some(day => {
             const meals = household.getMealsForDay(day);
-            // In full implementation, would check recipe ingredients
-            // For now, simplified check
-            return meals.length > 0;
+            if (meals.length === 0) return false;
+
+            // Fallback when no catalog: treat any planned meal as protective
+            if (recipes.length === 0) return true;
+
+            const itemName = item.name.toLowerCase();
+            return meals.some(meal => {
+                const recipe = recipes.find(r => r.id === meal.recipeId);
+                if (!recipe || !recipe.ingredients) return false;
+                return recipe.ingredients.some(ing => {
+                    const ingName = ing.name.toLowerCase();
+                    return itemName.includes(ingName) || ingName.includes(itemName);
+                });
+            });
         });
     }
     
+    /**
+     * Deep-clone a Household for simulation use.
+     * Primitive fields are copied by value via Object.assign.
+     * Array/object fields that the simulation reads (mealPlan) or that could
+     * be mutated as a side-effect (insightCounters) are explicitly deep-copied.
+     * dailyHistory is dropped entirely — simulation does not need it.
+     * @param {Household} household - Source household
+     * @returns {Household} Cloned household instance
+     * @private
+     */
+    _cloneHousehold(household) {
+        const clone = Object.assign(
+            Object.create(Object.getPrototypeOf(household)),
+            household
+        );
+        // Deep-copy arrays/objects to avoid cross-contamination between runs
+        clone.mealPlan           = household.mealPlan.map(m => ({ ...m }));
+        clone.insightCounters    = { ...household.insightCounters };
+        clone.achievements       = [...household.achievements];
+        clone.planningObjectives = { ...household.planningObjectives };
+        clone.dailyHistory       = []; // not needed in simulation
+        return clone;
+    }
+
     /**
      * Get human-readable reason for spoilage
      * @param {FoodItem} item - Spoiled item
@@ -305,46 +349,72 @@ class StochasticModel {
     }
     
     /**
-     * Simulate multiple days ahead (for planning minigame projections)
+     * Simulate multiple days ahead (for planning minigame projections).
+     *
+     * Runs `options.iterations` independent Monte Carlo passes and returns the
+     * averaged result. Averaging eliminates the frame-to-frame jitter that
+     * occurred with a single stochastic run, so the waste bar moves smoothly
+     * and consistently as the player assigns meals.
+     *
+     * Passes the recipe catalog to `calculateDailyWaste` so that
+     * `isItemInUpcomingMeals` can perform real ingredient matching — planning a
+     * "Pasta with Tomato Sauce" recipe now actually lowers the spoilage
+     * probability for Tomato and Pasta items.
+     *
      * @param {Household} household - Household snapshot
      * @param {Inventory} inventory - Inventory snapshot
-     * @param {number} days - Days to simulate ahead
-     * @returns {Object} Projected outcomes
+     * @param {number} days - Days to simulate ahead (default 7)
+     * @param {Object} options
+     * @param {Array}  options.recipes    - Full recipe catalog for ingredient matching
+     * @param {number} options.iterations - Monte Carlo runs to average (default 10)
+     * @returns {Object} Averaged projected outcomes
      */
-    simulateFuture(household, inventory, days = 7) {
-        // Clone household and inventory for simulation
-        const simHousehold = Object.assign(Object.create(Object.getPrototypeOf(household)), household);
-        const simInventory = Inventory.fromJSON(inventory.toJSON());
-        
-        let projectedWaste = 0;
-        let projectedWasteValue = 0;
-        const projectedSpoilage = [];
-        
-        for (let i = 0; i < days; i++) {
-            // Update freshness
-            simInventory.updateAllFreshness(simHousehold.storageQuality);
-            
-            // Calculate waste
-            const dayResult = this.calculateDailyWaste(simHousehold, simInventory);
-            projectedWaste += dayResult.wasteWeight;
-            projectedWasteValue += dayResult.wasteCost;
-            
-            if (dayResult.wastedItems.length > 0) {
-                projectedSpoilage.push({
-                    day: simHousehold.day + i,
-                    items: dayResult.wastedItems.map(item => item.name)
-                });
+    simulateFuture(household, inventory, days = 7, options = {}) {
+        const { recipes = [], iterations = 10 } = options;
+
+        let totalWaste      = 0;
+        let totalWasteValue = 0;
+        const spoilageUnion = {}; // day → Set of item names seen across all runs
+
+        for (let run = 0; run < iterations; run++) {
+            const simHousehold = this._cloneHousehold(household);
+            const simInventory = Inventory.fromJSON(inventory.toJSON());
+
+            for (let i = 0; i < days; i++) {
+                // Age all items one day
+                simInventory.updateAllFreshness(simHousehold.storageQuality);
+
+                // Stochastic daily waste roll (recipes forwarded for ingredient matching)
+                const dayResult = this.calculateDailyWaste(simHousehold, simInventory, recipes);
+                totalWaste      += dayResult.wasteWeight;
+                totalWasteValue += dayResult.wasteCost;
+
+                // Collect spoiled item names for the union across all runs
+                if (dayResult.wastedItems.length > 0) {
+                    const simDay = simHousehold.day + i;
+                    if (!spoilageUnion[simDay]) spoilageUnion[simDay] = new Set();
+                    dayResult.wastedItems.forEach(item => spoilageUnion[simDay].add(item.name));
+                }
+
+                simHousehold.advanceDay();
             }
-            
-            simHousehold.advanceDay();
         }
-        
+
+        const projectedWaste      = totalWaste      / iterations;
+        const projectedWasteValue = totalWasteValue / iterations;
+
+        // Convert spoilage union map → sorted array for callers
+        const projectedSpoilage = Object.keys(spoilageUnion)
+            .map(day => ({ day: Number(day), items: [...spoilageUnion[day]] }))
+            .sort((a, b) => a.day - b.day);
+
         return {
-            projectedWaste: projectedWaste,
-            projectedWasteValue: projectedWasteValue,
-            projectedSpoilage: projectedSpoilage,
+            projectedWaste,
+            projectedWasteValue,
+            projectedSpoilage,
             daysSimulated: days,
-            warning: projectedWaste > household.familySize * days * 0.5 // More than 0.5 lbs per person per day
+            iterations,
+            warning: projectedWaste > household.familySize * days * 0.5
         };
     }
     

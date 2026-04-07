@@ -169,13 +169,38 @@ class ShoppingMinigame extends Phaser.Scene {
                     requiredIngredients[ingredient.name] = (requiredIngredients[ingredient.name] || 0) + needed;
                 });
             });
-            
+
+            // Servings-per-purchased-unit for multi-serving items
+            const SERVINGS_PER_UNIT = {
+                'bread': 8, 'eggs': 6, 'milk': 4, 'cheese': 4,
+                'orange juice': 4, 'pasta': 4, 'rice': 4,
+                'onion': 3, 'tomato': 3, 'canned beans': 3,
+                'frozen peas': 3, 'spinach': 3
+            };
+            // Also try the food database in case new items are added later
+            const foodDatabase = this.cache.json.get('foodDatabase');
+
             Object.keys(requiredIngredients).forEach(itemName => {
-                const needed = Math.ceil(requiredIngredients[itemName]);
-                if (!this.inventory.hasSufficientQuantity(itemName, needed)) {
+                const totalServingsNeeded = Math.ceil(requiredIngredients[itemName]);
+                if (!this.inventory.hasSufficientQuantity(itemName, totalServingsNeeded)) {
+                    // How many servings does the player already have?
+                    const currentServings = this.inventory.items
+                        .filter(i => i.name.toLowerCase() === itemName.toLowerCase() && !i.isSpoiled())
+                        .reduce((sum, i) => sum + i.quantity, 0);
+                    const shortfall = totalServingsNeeded - currentServings;
+
+                    // Convert shortfall to store units (e.g. shortfall=4 eggs / 6 per carton = 1 carton)
+                    const dbItem = foodDatabase?.foodItems?.find(
+                        i => i.name.toLowerCase() === itemName.toLowerCase()
+                    );
+                    const servingsPerUnit = dbItem?.servings
+                        || SERVINGS_PER_UNIT[itemName.toLowerCase()]
+                        || 1;
+                    const unitsToBuy = Math.ceil(shortfall / servingsPerUnit);
+
                     this.shoppingList.push({
                         name: itemName,
-                        needed: needed,
+                        needed: unitsToBuy,
                         purchased: false
                     });
                 }
@@ -205,7 +230,7 @@ class ShoppingMinigame extends Phaser.Scene {
                 category: itemData.category,
                 price: itemData.avgPrice,
                 daysUntilSpoilage: itemData.daysUntilSpoilage,
-                quantity: 1,
+                quantity: itemData.servings || 1,
                 perishability: itemData.perishability,
                 spriteKey: itemData.spriteKey,
                 dayPurchased: this.household.day

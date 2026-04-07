@@ -113,7 +113,10 @@ class FridgeMinigame extends Phaser.Scene {
             if (this.tweens) this.tweens.killAll();
         });
 
-        // Hydra guide advice
+        // Mark L1 (Check Expiring Items) immediately — opening the fridge counts as the check
+        this.showExpiringItemsCard();
+
+        // Hydra guide advice (delayed to avoid collision with expiring card)
         this.time.delayedCall(500, () => {
             const hydraGuide = new HydraGuide(this);
             if (hydraGuide.shouldShow()) {
@@ -356,6 +359,97 @@ class FridgeMinigame extends Phaser.Scene {
     /**
      * Build all three zone panels and default to showing only fridge
      */
+    /**
+     * Show expiring items card overlaid on the storage zone.
+     * Opening the fridge counts as checking expiring items (marks L1 for today).
+     */
+    showExpiringItemsCard() {
+        // Mark L1 for today
+        if (this.household.planningObjectives) {
+            this.household.planningObjectives.lastExpiringCheckDay = this.household.day;
+        }
+        this.household.save();
+
+        const expiring = this.inventory.getExpiringSoonItems
+            ? this.inventory.getExpiringSoonItems()
+            : [];
+
+        const cardX = 55, cardY = 115;
+        const cardW = 690;
+        const rowH  = 32;
+        const cardH = expiring.length > 0
+            ? 54 + Math.min(expiring.length, 4) * rowH
+            : 54;
+
+        const depth = 200;
+
+        const shadow = this.add.rectangle(cardX + 4, cardY + 4, cardW, cardH, 0x000000, 0.18)
+            .setOrigin(0, 0).setDepth(depth);
+        const bg = this.add.rectangle(cardX, cardY, cardW, cardH,
+            expiring.length > 0 ? 0xFFF8E1 : 0xF1F8E9)
+            .setOrigin(0, 0).setDepth(depth);
+        bg.setStrokeStyle(2, expiring.length > 0 ? 0xFFB300 : 0x66BB6A);
+
+        const headerIcon = expiring.length > 0 ? '⏰' : '✅';
+        const headerText = expiring.length > 0
+            ? `${expiring.length} item${expiring.length > 1 ? 's' : ''} expiring soon — plan meals around them!`
+            : 'All items are fresh — great job!';
+        const headerColor = expiring.length > 0 ? '#E65100' : '#2E7D32';
+
+        this.add.text(cardX + 14, cardY + 14, `${headerIcon} ${headerText}`, {
+            fontSize: '15px', fontFamily: 'Fredoka, Arial',
+            color: headerColor, fontStyle: 'bold'
+        }).setOrigin(0, 0).setDepth(depth + 1);
+
+        expiring.slice(0, 4).forEach((item, i) => {
+            const rowY = cardY + 40 + i * rowH;
+            const daysLeft = item.freshness !== undefined ? Math.round(item.freshness) : '?';
+            const urgency  = daysLeft <= 1 ? '🔴' : '🟡';
+            const dayLabel = daysLeft === 0 ? 'expires today!' : `${daysLeft}d left`;
+
+            this.add.text(cardX + 20, rowY, `${urgency} ${item.name}`, {
+                fontSize: '14px', fontFamily: 'Fredoka, Arial', color: '#333333', fontStyle: 'bold'
+            }).setOrigin(0, 0).setDepth(depth + 1);
+
+            this.add.text(cardX + cardW - 14, rowY, dayLabel, {
+                fontSize: '13px', fontFamily: 'Fredoka, Arial',
+                color: daysLeft <= 1 ? '#D32F2F' : '#F57F17', fontStyle: 'bold'
+            }).setOrigin(1, 0).setDepth(depth + 1);
+        });
+
+        // Close button (top-right corner)
+        const closeX = cardX + cardW - 8;
+        const closeY = cardY + 8;
+        const closeBtn = this.add.text(closeX, closeY, '✕', {
+            fontSize: '16px', fontFamily: 'Fredoka, Arial',
+            color: expiring.length > 0 ? '#BF360C' : '#1B5E20', fontStyle: 'bold',
+            backgroundColor: expiring.length > 0 ? '#FFE0B2' : '#C8E6C9',
+            padding: { x: 6, y: 2 }
+        }).setOrigin(1, 0).setDepth(depth + 2).setInteractive({ useHandCursor: true });
+
+        const allParts = [shadow, bg, closeBtn];
+        // Collect all depth-layer objects to destroy on close
+        this.children.list
+            .filter(c => c.depth === depth + 1)
+            .forEach(c => allParts.push(c));
+
+        const dismiss = () => {
+            // Destroy all card elements
+            this.children.list
+                .filter(c => c.depth >= depth && c.depth <= depth + 2)
+                .forEach(c => c.destroy());
+        };
+
+        closeBtn.on('pointerup', dismiss);
+        closeBtn.on('pointerover', () => closeBtn.setAlpha(0.75));
+        closeBtn.on('pointerout',  () => closeBtn.setAlpha(1));
+
+        // Auto-dismiss after 6 seconds if player doesn't close it
+        this.time.delayedCall(6000, () => {
+            if (bg.active) dismiss();
+        });
+    }
+
     createFridgeLayout() {
         this.fridgeZoneGroup  = this.createFridgeZones();
         this.freezerZoneGroup = this.createFreezerZones();
