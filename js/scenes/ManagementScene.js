@@ -62,6 +62,11 @@ class ManagementScene extends Phaser.Scene {
                 this.homeScreenMusic.destroy();
                 this.homeScreenMusic = null;
             }
+            if (this.endDayBgm) {
+                this.endDayBgm.stop();
+                this.endDayBgm.destroy();
+                this.endDayBgm = null;
+            }
         });
         
         // Show hydra introduction on first visit
@@ -872,6 +877,18 @@ class ManagementScene extends Phaser.Scene {
     showDailyResults(results) {
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
+
+        // Swap BGM for end-of-day modal
+        if (this.homeScreenMusic && this.homeScreenMusic.isPlaying) {
+            this.homeScreenMusic.stop();
+        }
+        if (this.cache.audio.exists('endDayBgm')) {
+            this.endDayBgm = this.sound.add('endDayBgm', { loop: true, volume: 0.4 });
+            this.endDayBgm.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.endDayBgm, 'EndDayModal');
+            }
+        }
         
         // Create modal overlay
         const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
@@ -1007,6 +1024,13 @@ class ManagementScene extends Phaser.Scene {
             titleText.destroy();
             resultTexts.forEach(text => text.destroy());
             bedBtn.destroy();
+
+            // Stop end-of-day BGM before transitioning
+            if (this.endDayBgm) {
+                this.endDayBgm.stop();
+                this.endDayBgm.destroy();
+                this.endDayBgm = null;
+            }
             
             // End session only when hidden summary is ready
             if (results.sessionComplete && results.sessionSummary) {

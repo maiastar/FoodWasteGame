@@ -39,9 +39,13 @@ class BootScene extends Phaser.Scene {
         this.load.image('travelCloud', sprite('cloud.png'));
 
         this.load.audio('planningCookingMusic', 'assets/audio/delosound-cooking-food-music-447269.mp3');
-        this.load.audio('homescreenSynthwaveMusic', 'assets/audio/tunetank-dreamy-synthwave-music-347512.mp3');
+        this.load.audio('CookingMusic', 'assets/audio/audiocoffee-kids-117853.mp3');
+        this.load.audio('homescreenSynthwaveMusic', 'assets/audio/hitslab-space-landscape-earth-music-335721.mp3');
         this.load.audio('titleSetupBgm', 'assets/audio/backgroundmusicforvideos-roblox-minecraft-fortnite-video-game-music-358426.mp3');
         this.load.audio('sessionSummaryBgm', 'assets/audio/lnplusmusic-game-gaming-minecraft-background-music-366793.mp3');
+        this.load.audio('fridgeMinigameBgm', 'assets/audio/lux-aeterna-december-snow-music-441451.mp3');
+        this.load.audio('endDayBgm', 'assets/audio/tunetank-dreamy-synthwave-music-347512.mp3');
+        this.load.audio('shoppingMusic', 'assets/audio/lnplusmusic-earth-day-galaxy-universe-music-279212.mp3');
 
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');

@@ -106,11 +106,24 @@ class FridgeMinigame extends Phaser.Scene {
         // Create done button
         this.createDoneButton();
 
+        if (this.cache.audio.exists('fridgeMinigameBgm')) {
+            this.fridgeBgm = this.sound.add('fridgeMinigameBgm', { loop: true, volume: 0.4 });
+            this.fridgeBgm.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.fridgeBgm, 'FridgeMinigame');
+            }
+        }
+
         const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
             ? Phaser.Scenes.Events.SHUTDOWN
             : 'shutdown';
         this.events.once(shutdownEv, () => {
             if (this.tweens) this.tweens.killAll();
+            if (this.fridgeBgm) {
+                this.fridgeBgm.stop();
+                this.fridgeBgm.destroy();
+                this.fridgeBgm = null;
+            }
         });
 
         // Mark L1 (Check Expiring Items) immediately — opening the fridge counts as the check

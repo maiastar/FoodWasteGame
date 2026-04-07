@@ -48,6 +48,26 @@ class CookingMinigame extends Phaser.Scene {
         
         // Show recipe selection
         this.showRecipeSelection();
+
+        if (this.cache.audio.exists('CookingMusic')) {
+            this.CookingMusic = this.sound.add('CookingMusic', { loop: true, volume: 0.4 });
+            this.CookingMusic.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.CookingMusic, 'CookingMinigame');
+            }
+        }
+
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.tweens) this.tweens.killAll();
+            if (this.CookingMusic) {
+                this.CookingMusic.stop();
+                this.CookingMusic.destroy();
+                this.CookingMusic = null;
+            }
+        });
     }
     
     /**

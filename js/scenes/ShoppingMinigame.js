@@ -70,6 +70,26 @@ class ShoppingMinigame extends Phaser.Scene {
         }
         this.generateShoppingList();
         this.initializeShoppingInterface();
+
+        if (this.cache.audio.exists('shoppingMusic')) {
+            this.shoppingMusic = this.sound.add('shoppingMusic', { loop: true, volume: 0.4 });
+            this.shoppingMusic.play();
+            if (typeof wireBgmAfterAutoplayPolicy === 'function') {
+                wireBgmAfterAutoplayPolicy(this, () => this.shoppingMusic, 'ShoppingMinigame');
+            }
+        }
+
+        const shutdownEv = (typeof Phaser !== 'undefined' && Phaser.Scenes && Phaser.Scenes.Events && Phaser.Scenes.Events.SHUTDOWN)
+            ? Phaser.Scenes.Events.SHUTDOWN
+            : 'shutdown';
+        this.events.once(shutdownEv, () => {
+            if (this.tweens) this.tweens.killAll();
+            if (this.shoppingMusic) {
+                this.shoppingMusic.stop();
+                this.shoppingMusic.destroy();
+                this.shoppingMusic = null;
+            }
+        });
     }
     
     /**
