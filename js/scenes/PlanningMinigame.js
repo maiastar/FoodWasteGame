@@ -685,8 +685,8 @@ class PlanningMinigame extends Phaser.Scene {
             cell.add(spriteImg);
             cell.setData('slotImage', spriteImg);
             if (slotText) { slotText.setText(''); slotText.setVisible(false); }
-            spriteImg.setScale(0);
-            this.tweens.add({ targets: spriteImg, scaleX: 1, scaleY: 1, duration: 300, ease: 'Back.easeOut' });
+            spriteImg.setAlpha(0);
+            this.tweens.add({ targets: spriteImg, alpha: 1, duration: 300, ease: 'Power2' });
         } else if (slotText) {
             slotText.setText(recipe.icon);
             slotText.setFontSize('28px');
@@ -1904,12 +1904,17 @@ class PlanningMinigame extends Phaser.Scene {
     _makeRecipeSprite(x, y, recipe, size) {
         const COMPLEX = { 'fish-dinner':0,'rice-bowl':1,'yogurt-parfait':2,'french-toast':3,'spinach-omelette':4,'morning-smoothie':5,'grilled-cheese':6,'beef-tacos':7,'beef-fried-rice':8,'cheesy-veggie-pasta':9 };
         const BASIC   = { 'pasta-tomato':2,'scrambled-eggs':3,'grilled-chicken':4,'veggie-stir-fry':5,'rice-bowl':6,'simple-salad':7 };
-        const rsk = recipe.spriteKey;
+        // Fine-tune offsets (in game pixels) for frames whose visible content sits off-center
+        const OFFSETS = { 'grilled-cheese': { dx: 8, dy: 0 }, 'rice-bowl': { dx: -8, dy: 0 }, 'fish-dinner': { dx: -8, dy: 0 } };
+        // Use spriteKey if available; fall back to id (they are always equal, but spriteKey
+        // may be absent if recipes.json is served from browser cache without that field)
+        const rsk = recipe.spriteKey || recipe.id;
+        const off = OFFSETS[rsk] || { dx: 0, dy: 0 };
         if (rsk && COMPLEX[rsk] !== undefined && this.textures.exists('complexMealSprites')) {
-            return this.add.image(x, y, 'complexMealSprites', COMPLEX[rsk]).setDisplaySize(size, size).setOrigin(0.5);
+            return this.add.image(x + off.dx, y + off.dy, 'complexMealSprites', COMPLEX[rsk]).setDisplaySize(size, size).setOrigin(0.5);
         }
         if (rsk && BASIC[rsk] !== undefined && this.textures.exists('basicMealSprites')) {
-            return this.add.image(x, y, 'basicMealSprites', BASIC[rsk]).setDisplaySize(size, size).setOrigin(0.5);
+            return this.add.image(x + off.dx, y + off.dy, 'basicMealSprites', BASIC[rsk]).setDisplaySize(size, size).setOrigin(0.5);
         }
         return null;
     }

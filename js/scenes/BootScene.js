@@ -59,8 +59,8 @@ class BootScene extends Phaser.Scene {
         this.load.spritesheet('basicMealSprites', 'assets/sprites/Food/BasicMeals-transparent.png', {
             frameWidth: 704, frameHeight: 768
         });
-        this.load.spritesheet('complexMealSprites', 'assets/sprites/Food/ComplexDinners-transparent.png', {
-            frameWidth: 563, frameHeight: 768
+        this.load.spritesheet('complexMealSprites', 'assets/sprites/Food/Dinnerwbreaky.png', {
+            frameWidth: 384, frameHeight: 523
         });
 
         // TODO: Load sprite assets when we have them

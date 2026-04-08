@@ -242,11 +242,12 @@ class CookingMinigame extends Phaser.Scene {
         // Recipe icon — use sprite if available, otherwise fall back to emoji
         const COMPLEX_MEAL_FRAMES    = { 'fish-dinner':0,'rice-bowl':1,'yogurt-parfait':2,'french-toast':3,'spinach-omelette':4,'morning-smoothie':5,'grilled-cheese':6,'beef-tacos':7,'beef-fried-rice':8,'cheesy-veggie-pasta':9 };
         const BASIC_MEAL_RECIPE_FRAMES = { 'pasta-tomato':2,'scrambled-eggs':3,'grilled-chicken':4,'veggie-stir-fry':5,'rice-bowl':6,'simple-salad':7 };
+        const rskCard = recipe.spriteKey || recipe.id;
         let icon;
-        if (recipe.spriteKey && COMPLEX_MEAL_FRAMES[recipe.spriteKey] !== undefined && this.textures.exists('complexMealSprites')) {
-            icon = this.add.image(0, -100, 'complexMealSprites', COMPLEX_MEAL_FRAMES[recipe.spriteKey]).setDisplaySize(120, 120).setOrigin(0.5);
-        } else if (recipe.spriteKey && BASIC_MEAL_RECIPE_FRAMES[recipe.spriteKey] !== undefined && this.textures.exists('basicMealSprites')) {
-            icon = this.add.image(0, -100, 'basicMealSprites', BASIC_MEAL_RECIPE_FRAMES[recipe.spriteKey]).setDisplaySize(120, 120).setOrigin(0.5);
+        if (rskCard && COMPLEX_MEAL_FRAMES[rskCard] !== undefined && this.textures.exists('complexMealSprites')) {
+            icon = this.add.image(0, -100, 'complexMealSprites', COMPLEX_MEAL_FRAMES[rskCard]).setDisplaySize(120, 120).setOrigin(0.5);
+        } else if (rskCard && BASIC_MEAL_RECIPE_FRAMES[rskCard] !== undefined && this.textures.exists('basicMealSprites')) {
+            icon = this.add.image(0, -100, 'basicMealSprites', BASIC_MEAL_RECIPE_FRAMES[rskCard]).setDisplaySize(120, 120).setOrigin(0.5);
         } else {
             icon = this.add.text(0, -130, recipe.icon, { fontSize: '80px' }).setOrigin(0.5);
         }
@@ -380,7 +381,7 @@ class CookingMinigame extends Phaser.Scene {
         // Recipe icon — use sprite if available, otherwise fall back to emoji
         const COMPLEX_MEAL_FRAMES_SEL    = { 'fish-dinner':0,'rice-bowl':1,'yogurt-parfait':2,'french-toast':3,'spinach-omelette':4,'morning-smoothie':5,'grilled-cheese':6,'beef-tacos':7,'beef-fried-rice':8,'cheesy-veggie-pasta':9 };
         const BASIC_MEAL_RECIPE_FRAMES_SEL = { 'pasta-tomato':2,'scrambled-eggs':3,'grilled-chicken':4,'veggie-stir-fry':5,'rice-bowl':6,'simple-salad':7 };
-        const rsk = this.selectedRecipe.spriteKey;
+        const rsk = this.selectedRecipe.spriteKey || this.selectedRecipe.id;
         if (rsk && COMPLEX_MEAL_FRAMES_SEL[rsk] !== undefined && this.textures.exists('complexMealSprites')) {
             this.add.image(recipeX + recipeWidth / 2, recipeY + 100, 'complexMealSprites', COMPLEX_MEAL_FRAMES_SEL[rsk]).setDisplaySize(140, 140).setOrigin(0.5);
         } else if (rsk && BASIC_MEAL_RECIPE_FRAMES_SEL[rsk] !== undefined && this.textures.exists('basicMealSprites')) {
