@@ -47,6 +47,22 @@ class BootScene extends Phaser.Scene {
         this.load.audio('endDayBgm', 'assets/audio/tunetank-dreamy-synthwave-music-347512.mp3');
         this.load.audio('shoppingMusic', 'assets/audio/lnplusmusic-earth-day-galaxy-universe-music-279212.mp3');
 
+        this.load.spritesheet('produceSprites', 'assets/sprites/Food/Produce-transparent.png', {
+            frameWidth: 704, frameHeight: 768
+        });
+        this.load.spritesheet('proteinDairySprites', 'assets/sprites/Food/ProteinandDairy-transparent.png', {
+            frameWidth: 704, frameHeight: 768
+        });
+        this.load.spritesheet('pantrySprites', 'assets/sprites/Food/ThePantry-transparent.png', {
+            frameWidth: 704, frameHeight: 768
+        });
+        this.load.spritesheet('basicMealSprites', 'assets/sprites/Food/BasicMeals-transparent.png', {
+            frameWidth: 704, frameHeight: 768
+        });
+        this.load.spritesheet('complexMealSprites', 'assets/sprites/Food/ComplexDinners-transparent.png', {
+            frameWidth: 563, frameHeight: 768
+        });
+
         // TODO: Load sprite assets when we have them
         // this.load.atlas('food-items', 'assets/sprites/food-atlas.png', 'assets/sprites/food-atlas.json');
         

@@ -13,7 +13,8 @@
       ],
       "category": "dinner",
       "wasteReductionTip": "Use any vegetables close to expiration in pasta sauce!",
-      "icon": "🍝"
+      "icon": "🍝",
+      "spriteKey": "pasta-tomato"
     },
     {
       "id": "scrambled-eggs",
@@ -27,7 +28,8 @@
       ],
       "category": "breakfast",
       "wasteReductionTip": "Eggs last 3-5 weeks past their carton date if refrigerated!",
-      "icon": "🍳"
+      "icon": "🍳",
+      "spriteKey": "scrambled-eggs"
     },
     {
       "id": "grilled-chicken",
@@ -42,7 +44,8 @@
       ],
       "category": "dinner",
       "wasteReductionTip": "Use chicken within 2 days or freeze it immediately!",
-      "icon": "🍗"
+      "icon": "🍗",
+      "spriteKey": "grilled-chicken"
     },
     {
       "id": "veggie-stir-fry",
@@ -58,7 +61,8 @@
       ],
       "category": "dinner",
       "wasteReductionTip": "Stir fry is perfect for using up vegetables before they spoil!",
-      "icon": "🥘"
+      "icon": "🥘",
+      "spriteKey": "veggie-stir-fry"
     },
     {
       "id": "simple-salad",
@@ -73,7 +77,8 @@
       ],
       "category": "lunch",
       "wasteReductionTip": "Wash lettuce just before eating - stays fresh longer!",
-      "icon": "🥗"
+      "icon": "🥗",
+      "spriteKey": "simple-salad"
     },
     {
       "id": "fish-dinner",
@@ -88,7 +93,8 @@
       ],
       "category": "dinner",
       "wasteReductionTip": "Fish must be cooked within 1 day of purchase!",
-      "icon": "🐟"
+      "icon": "🐟",
+      "spriteKey": "fish-dinner"
     },
     {
       "id": "rice-bowl",
@@ -103,7 +109,8 @@
       ],
       "category": "lunch",
       "wasteReductionTip": "Combine shelf-stable and fresh ingredients for balanced meals!",
-      "icon": "🍚"
+      "icon": "🍚",
+      "spriteKey": "rice-bowl"
     },
     {
       "id": "yogurt-parfait",
@@ -118,7 +125,8 @@
       ],
       "category": "breakfast",
       "wasteReductionTip": "Use slightly overripe fruit - perfect for parfaits!",
-      "icon": "🍨"
+      "icon": "🍨",
+      "spriteKey": "yogurt-parfait"
     },
     {
       "id": "french-toast",
@@ -133,7 +141,8 @@
       ],
       "category": "breakfast",
       "wasteReductionTip": "Stale bread makes the best French toast - never throw it out!",
-      "icon": "🍞"
+      "icon": "🍞",
+      "spriteKey": "french-toast"
     },
     {
       "id": "spinach-omelette",
@@ -148,7 +157,8 @@
       ],
       "category": "breakfast",
       "wasteReductionTip": "Spinach wilts fast - use it in omelettes before it goes bad!",
-      "icon": "🥚"
+      "icon": "🥚",
+      "spriteKey": "spinach-omelette"
     },
     {
       "id": "morning-smoothie",
@@ -163,7 +173,8 @@
       ],
       "category": "breakfast",
       "wasteReductionTip": "Overripe fruit is sweeter - blend it into smoothies instead of tossing it!",
-      "icon": "🥤"
+      "icon": "🥤",
+      "spriteKey": "morning-smoothie"
     },
     {
       "id": "grilled-cheese",
@@ -177,7 +188,8 @@
       ],
       "category": "lunch",
       "wasteReductionTip": "Cheese nearing its date melts perfectly in a grilled cheese!",
-      "icon": "🥪"
+      "icon": "🥪",
+      "spriteKey": "grilled-cheese"
     },
     {
       "id": "beef-tacos",
@@ -192,7 +204,8 @@
       ],
       "category": "lunch",
       "wasteReductionTip": "Ground beef spoils fast - cook it the same day you buy it!",
-      "icon": "🌮"
+      "icon": "🌮",
+      "spriteKey": "beef-tacos"
     },
     {
       "id": "beef-fried-rice",
@@ -208,7 +221,8 @@
       ],
       "category": "dinner",
       "wasteReductionTip": "Frozen peas go straight from freezer to pan - zero waste!",
-      "icon": "🍳"
+      "icon": "🍳",
+      "spriteKey": "beef-fried-rice"
     },
     {
       "id": "cheesy-veggie-pasta",
@@ -224,7 +238,8 @@
       ],
       "category": "dinner",
       "wasteReductionTip": "Wilting spinach is perfect for pasta - heat revives the flavor!",
-      "icon": "🍝"
+      "icon": "🍝",
+      "spriteKey": "cheesy-veggie-pasta"
     }
   ]
 }

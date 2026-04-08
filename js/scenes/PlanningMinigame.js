@@ -31,6 +31,15 @@ class PlanningMinigame extends Phaser.Scene {
         this.household = gameState.household;
         this.inventory = gameState.inventory;
 
+        // Reset per-session state so re-entry doesn't reference destroyed objects
+        this.objectiveTexts = [];
+        this.sessionObjectives = {
+            l1_checked: false,
+            l2_lowWaste: false,
+            l3_expiringMealsCount: 0,
+            l4_balanced: false
+        };
+
         // If the player already used "Check Expiring Items" today, pre-complete L1
         const lastCheck = this.household.planningObjectives?.lastExpiringCheckDay ?? 0;
         if (lastCheck === this.household.day) {
@@ -487,9 +496,8 @@ class PlanningMinigame extends Phaser.Scene {
             
             // Recipe icon with circular bg
             const iconCircle = this.add.circle(35, 36, 20, isAssigned ? 0xD1C4E9 : 0xF3E5F5);
-            const recipeIcon = this.add.text(35, 36, recipe.icon, {
-                fontSize: '28px'
-            }).setOrigin(0.5);
+            const recipeIcon = this._makeRecipeSprite(35, 36, recipe, 44) ??
+                this.add.text(35, 36, recipe.icon, { fontSize: '28px' }).setOrigin(0.5);
             
             // Recipe name
             const recipeName = this.add.text(70, 10, recipe.name, {
@@ -628,7 +636,10 @@ class PlanningMinigame extends Phaser.Scene {
         bg.setStrokeStyle(2, 0x9C27B0);
         bg.setInteractive({ useHandCursor: true });
         
-        const text = this.add.text(-250, 0, `${recipe.icon} ${recipe.name}`, {
+        const iconSprite = this._makeRecipeSprite(-242, 0, recipe, 26);
+        const textX = iconSprite ? -224 : -250;
+        const textLabel = iconSprite ? recipe.name : `${recipe.icon} ${recipe.name}`;
+        const text = this.add.text(textX, 0, textLabel, {
             fontSize: '18px',
             fontFamily: 'Fredoka, Arial',
             color: '#333333',
@@ -641,7 +652,7 @@ class PlanningMinigame extends Phaser.Scene {
             color: '#666666'
         }).setOrigin(1, 0.5);
         
-        container.add([bg, text, servings]);
+        container.add(iconSprite ? [bg, iconSprite, text, servings] : [bg, text, servings]);
         
         bg.on('pointerover', () => {
             bg.setFillStyle(0xE1BEE7);
@@ -665,20 +676,24 @@ class PlanningMinigame extends Phaser.Scene {
         const slotText = cell.getData('slotText');
         const bg = cell.getData('bg');
         
-        if (slotText) {
+        // Remove any previous slot sprite
+        const existingSlotImg = cell.getData('slotImage');
+        if (existingSlotImg) { existingSlotImg.destroy(); cell.setData('slotImage', null); }
+
+        const spriteImg = this._makeRecipeSprite(45.5, 36, recipe, 38);
+        if (spriteImg) {
+            cell.add(spriteImg);
+            cell.setData('slotImage', spriteImg);
+            if (slotText) { slotText.setText(''); slotText.setVisible(false); }
+            spriteImg.setScale(0);
+            this.tweens.add({ targets: spriteImg, scaleX: 1, scaleY: 1, duration: 300, ease: 'Back.easeOut' });
+        } else if (slotText) {
             slotText.setText(recipe.icon);
             slotText.setFontSize('28px');
             slotText.setColor('#333333');
-            
-            // Pop-in animation
+            slotText.setVisible(true);
             slotText.setScale(0);
-            this.tweens.add({
-                targets: slotText,
-                scaleX: 1,
-                scaleY: 1,
-                duration: 300,
-                ease: 'Back.easeOut'
-            });
+            this.tweens.add({ targets: slotText, scaleX: 1, scaleY: 1, duration: 300, ease: 'Back.easeOut' });
         }
 
         // Show truncated recipe name below the icon
@@ -742,27 +757,27 @@ class PlanningMinigame extends Phaser.Scene {
         const nameText = cell.getData('nameText');
         if (nameText) nameText.setText('');
 
-        if (slotText) {
-            // Fade out animation
+        const slotImage = cell.getData('slotImage');
+        const animTarget = slotImage || slotText;
+        if (animTarget) {
             this.tweens.add({
-                targets: slotText,
+                targets: animTarget,
                 scaleX: 0,
                 scaleY: 0,
                 duration: 200,
                 ease: 'Back.easeIn',
                 onComplete: () => {
-                    slotText.setText('+');
-                    slotText.setFontSize('28px');
-                    slotText.setColor('#BDBDBD');
-                    
-                    // Fade back in
-                    this.tweens.add({
-                        targets: slotText,
-                        scaleX: 1,
-                        scaleY: 1,
-                        duration: 200,
-                        ease: 'Back.easeOut'
-                    });
+                    if (slotImage) {
+                        slotImage.destroy();
+                        cell.setData('slotImage', null);
+                    }
+                    if (slotText) {
+                        slotText.setText('+');
+                        slotText.setFontSize('28px');
+                        slotText.setColor('#BDBDBD');
+                        slotText.setVisible(true);
+                        this.tweens.add({ targets: slotText, scaleX: 1, scaleY: 1, duration: 200, ease: 'Back.easeOut' });
+                    }
                 }
             });
         }
@@ -799,10 +814,20 @@ class PlanningMinigame extends Phaser.Scene {
             const slotText = cell.getData('slotText');
             const bg = cell.getData('bg');
 
-            if (slotText) {
+            // Remove any stale slot image from a previous session
+            const existingImg = cell.getData('slotImage');
+            if (existingImg) { existingImg.destroy(); cell.setData('slotImage', null); }
+
+            const spriteImg = this._makeRecipeSprite(45.5, 36, recipe, 38);
+            if (spriteImg) {
+                cell.add(spriteImg);
+                cell.setData('slotImage', spriteImg);
+                if (slotText) { slotText.setText(''); slotText.setVisible(false); }
+            } else if (slotText) {
                 slotText.setText(recipe.icon);
                 slotText.setFontSize('28px');
                 slotText.setColor('#333333');
+                slotText.setVisible(true);
             }
             if (bg) {
                 bg.setFillStyle(0xF3E5F5);
@@ -980,7 +1005,8 @@ class PlanningMinigame extends Phaser.Scene {
 
             // Recipe icon
             const iconBg = this.add.circle(25, 19, 16, cookable ? 0x4CAF50 : partial ? 0xFF9800 : 0x9C27B0, 0.15);
-            const icon   = this.add.text(25, 19, recipe.icon, { fontSize: '22px' }).setOrigin(0.5);
+            const icon   = this._makeRecipeSprite(25, 19, recipe, 34) ??
+                this.add.text(25, 19, recipe.icon, { fontSize: '22px' }).setOrigin(0.5);
 
             // Recipe name
             const name = this.add.text(48, 19, recipe.name, {
@@ -1108,7 +1134,7 @@ class PlanningMinigame extends Phaser.Scene {
 
         states.forEach((done, i) => {
             const t = this.objectiveTexts[i];
-            if (!t) return;
+            if (!t || !t.active) return;
             if (done) {
                 t.setText('✓');
                 t.setColor('#4CAF50');
@@ -1465,13 +1491,16 @@ class PlanningMinigame extends Phaser.Scene {
         bg.setStrokeStyle(2, 0x9C27B0);
         bg.setInteractive({ useHandCursor: true });
         
-        const text = this.add.text(-240, 0, `${recipe.icon} ${recipe.name}`, {
+        const iconSprite2 = this._makeRecipeSprite(-232, 0, recipe, 24);
+        const textX2 = iconSprite2 ? -216 : -240;
+        const textLabel2 = iconSprite2 ? recipe.name : `${recipe.icon} ${recipe.name}`;
+        const text = this.add.text(textX2, 0, textLabel2, {
             fontSize: '16px',
             fontFamily: 'Fredoka, Arial',
             color: '#333333'
         }).setOrigin(0, 0.5);
         
-        container.add([bg, text]);
+        container.add(iconSprite2 ? [bg, iconSprite2, text] : [bg, text]);
         
         bg.on('pointerover', () => {
             bg.setFillStyle(0xE1BEE7);
@@ -1868,6 +1897,23 @@ class PlanningMinigame extends Phaser.Scene {
         return container;
     }
     
+    /**
+     * Returns a sprite image for a recipe, or null if no sprite is available.
+     * Caller should fall back to emoji text when null is returned.
+     */
+    _makeRecipeSprite(x, y, recipe, size) {
+        const COMPLEX = { 'fish-dinner':0,'rice-bowl':1,'yogurt-parfait':2,'french-toast':3,'spinach-omelette':4,'morning-smoothie':5,'grilled-cheese':6,'beef-tacos':7,'beef-fried-rice':8,'cheesy-veggie-pasta':9 };
+        const BASIC   = { 'pasta-tomato':2,'scrambled-eggs':3,'grilled-chicken':4,'veggie-stir-fry':5,'rice-bowl':6,'simple-salad':7 };
+        const rsk = recipe.spriteKey;
+        if (rsk && COMPLEX[rsk] !== undefined && this.textures.exists('complexMealSprites')) {
+            return this.add.image(x, y, 'complexMealSprites', COMPLEX[rsk]).setDisplaySize(size, size).setOrigin(0.5);
+        }
+        if (rsk && BASIC[rsk] !== undefined && this.textures.exists('basicMealSprites')) {
+            return this.add.image(x, y, 'basicMealSprites', BASIC[rsk]).setDisplaySize(size, size).setOrigin(0.5);
+        }
+        return null;
+    }
+
     /**
      * Create an animated badge with icon
      */

@@ -751,22 +751,36 @@ class FridgeMinigame extends Phaser.Scene {
         const accentBar = this.add.rectangle(0, 0, 8, 65, itemColor);
         accentBar.setOrigin(0, 0);
         
-        // Icons including new storage categories
-        const icons = {
-            'produce':    '🥬',
-            'dairy':      '🥛',
-            'meat':       '🥩',
-            'fish':       '🐟',
-            'other':      '🍱',
-            'frozen':     '🧊',
-            'grains':     '🌾',
-            'canned':     '🥫',
-            'condiments': '🧂',
-        };
-        const icon = icons[foodItem.category] || '🍱';
-        
-        const iconBg   = this.add.circle(35, 32, 22, itemColor, 0.2);
-        const iconText = this.add.text(35, 32, icon, { fontSize: '32px' }).setOrigin(0.5);
+        // Icon — use sprite if available, otherwise fall back to category emoji
+        const PRODUCE_FRAMES       = { 'apple':0,'banana':1,'lettuce':2,'tomato':3,'carrot':4,'broccoli':5,'potato':6,'onion':7 };
+        const PROTEIN_DAIRY_FRAMES = { 'milk':0,'yogurt':1,'eggs':2,'cheese':3,'chicken':4,'beef':5,'salmon':7 };
+        const PANTRY_FRAMES        = { 'strawberry':0,'spinach':1,'orange-juice':2,'grains':3,'bread':4,'pasta':5,'rice':6,'canned-beans':7 };
+        const BASIC_MEAL_GROCERY_FRAMES = { 'frozen-peas':0,'leftovers':1 };
+        const sk = foodItem.spriteKey;
+        const iconBg = this.add.circle(35, 32, 22, itemColor, 0.2);
+        let iconText;
+        if (PRODUCE_FRAMES[sk] !== undefined && this.textures.exists('produceSprites')) {
+            iconText = this.add.image(35, 32, 'produceSprites', PRODUCE_FRAMES[sk]).setDisplaySize(40, 40).setOrigin(0.5);
+        } else if (PROTEIN_DAIRY_FRAMES[sk] !== undefined && this.textures.exists('proteinDairySprites')) {
+            iconText = this.add.image(35, 32, 'proteinDairySprites', PROTEIN_DAIRY_FRAMES[sk]).setDisplaySize(40, 40).setOrigin(0.5);
+        } else if (PANTRY_FRAMES[sk] !== undefined && this.textures.exists('pantrySprites')) {
+            iconText = this.add.image(35, 32, 'pantrySprites', PANTRY_FRAMES[sk]).setDisplaySize(40, 40).setOrigin(0.5);
+        } else if (BASIC_MEAL_GROCERY_FRAMES[sk] !== undefined && this.textures.exists('basicMealSprites')) {
+            iconText = this.add.image(35, 32, 'basicMealSprites', BASIC_MEAL_GROCERY_FRAMES[sk]).setDisplaySize(40, 40).setOrigin(0.5);
+        } else {
+            const icons = {
+                'produce':    '🥬',
+                'dairy':      '🥛',
+                'meat':       '🥩',
+                'fish':       '🐟',
+                'other':      '🍱',
+                'frozen':     '🧊',
+                'grains':     '🌾',
+                'canned':     '🥫',
+                'condiments': '🧂',
+            };
+            iconText = this.add.text(35, 32, icons[foodItem.category] || '🍱', { fontSize: '32px' }).setOrigin(0.5);
+        }
         
         const nameText = this.add.text(68, 18, foodItem.name, {
             fontSize: '19px',

@@ -670,7 +670,7 @@ class ManagementScene extends Phaser.Scene {
         this.configureDay1ActionButton(cookBtn, 0xFF9800, cookEnabled, 'day1-need-fridge', () => {
             this.time.delayedCall(0, () => this.scene.start('CookingMinigame'));
         });
-        
+
         // Fridge button (with badge if organization needed)
         const needsOrganization = summary.totalItems > 10 && this.household.storageQuality < 0.8;
         const fridgeBadge = needsOrganization ? {icon: '!', color: 0x2196F3} : null;
